@@ -1,0 +1,17 @@
+@import 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+
+/* Custom styles */
+.story-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.scene-image {
+    max-width: 100%;
+    height: auto;
+}
+
+.audio-player {
+    width: 100%;
+    margin-top: 1rem;
+}

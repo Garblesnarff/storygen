@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="story-container">
+    <form id="story-form" class="mb-8">
+        <label for="topic" class="block mb-2 font-bold">Enter a story topic or premise:</label>
+        <input type="text" id="topic" name="topic" required class="w-full p-2 border rounded">
+        <button type="submit" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate Story</button>
+    </form>
+    
+    <div id="story-container"></div>
+    <div id="scene-container"></div>
+</div>
+{% endblock %}
