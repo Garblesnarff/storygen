@@ -5,5 +5,6 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///storytelling.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     UNSPLASH_ACCESS_KEY = os.environ.get('UNSPLASH_ACCESS_KEY')
     GOOGLE_CLOUD_TTS_CREDENTIALS = os.environ.get('GOOGLE_CLOUD_TTS_CREDENTIALS')

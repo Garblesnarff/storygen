@@ -14,10 +14,10 @@ def index():
 def generate_story():
     topic = request.json['topic']
     
-    # Generate book specification
+    # Generate book specification using Groq
     book_spec = generate_book_spec(topic)
     
-    # Generate story outline
+    # Generate story outline using Gemini
     outline = generate_outline(book_spec)
     
     # Save to database
@@ -41,7 +41,7 @@ def generate_scene_route():
     if not story:
         return jsonify({'error': 'Story not found'}), 404
     
-    # Generate scene content
+    # Generate scene content using Groq
     scene_content = generate_scene(story.book_spec, story.outline, chapter, scene_number)
     
     # Get image for scene
