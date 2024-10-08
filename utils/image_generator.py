@@ -1,21 +1,60 @@
 import os
 import requests
+import base64
+from together import Together
+from io import BytesIO
+from PIL import Image
 
 UNSPLASH_ACCESS_KEY = os.environ.get('UNSPLASH_ACCESS_KEY')
+TOGETHER_API_KEY = os.environ.get('TOGETHER_API_KEY')
+
+together_client = Together(api_key=TOGETHER_API_KEY)
 
 def get_image_for_scene(scene_content):
     # Extract keywords from the scene content
     keywords = extract_keywords(scene_content)
     
-    # Search Unsplash for an image
-    url = f"https://api.unsplash.com/photos/random?query={keywords}&client_id={UNSPLASH_ACCESS_KEY}"
-    response = requests.get(url)
+    # Try Unsplash API first
+    unsplash_image_url = get_unsplash_image(keywords)
+    if unsplash_image_url:
+        return unsplash_image_url
     
-    if response.status_code == 200:
+    # If Unsplash fails, use Flux API
+    return get_flux_image(scene_content)
+
+def get_unsplash_image(keywords):
+    url = f"https://api.unsplash.com/photos/random?query={keywords}&client_id={UNSPLASH_ACCESS_KEY}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
         data = response.json()
         return data['urls']['regular']
-    else:
-        # Return a placeholder image if the API call fails
+    except requests.exceptions.RequestException as e:
+        print(f"Unsplash API error: {e}")
+        return None
+
+def get_flux_image(scene_content):
+    try:
+        response = together_client.images.generate(
+            prompt=f"A scene depicting: {scene_content}",
+            model="black-forest-labs/FLUX.1-schnell-Free",
+            width=1024,
+            height=768,
+            steps=4,
+            n=1,
+            response_format="b64_json"
+        )
+        image_data = response.data[0].b64_json
+        image = Image.open(BytesIO(base64.b64decode(image_data)))
+        
+        # Save the image to a file in the static/images directory
+        image_filename = f"generated_image_{int(time.time())}.png"
+        image_path = os.path.join('static', 'images', image_filename)
+        image.save(image_path)
+        
+        return f"/static/images/{image_filename}"
+    except Exception as e:
+        print(f"Flux API error: {e}")
         return "/static/images/placeholder.svg"
 
 def extract_keywords(scene_content):
