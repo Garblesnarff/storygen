@@ -50,10 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }),
                 });
                 
-                if (!response.ok) throw new Error('Failed to generate scene');
+                const data = await response.json();
                 
-                const sceneData = await response.json();
-                displayScene(sceneData);
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to generate scene');
+                }
+                
+                displayScene(data);
                 
                 currentScene++;
                 if (currentScene > 3) {  // Assuming 3 scenes per chapter
@@ -62,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to generate scene. Please try again.');
+                alert(`Failed to generate scene: ${error.message}`);
             }
         });
     }

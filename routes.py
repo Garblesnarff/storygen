@@ -33,32 +33,36 @@ def generate_story():
 
 @main_bp.route('/generate_scene', methods=['POST'])
 def generate_scene_route():
-    story_id = request.json['story_id']
-    chapter = request.json['chapter']
-    scene_number = request.json['scene_number']
-    
-    story = Story.query.get(story_id)
-    if not story:
-        return jsonify({'error': 'Story not found'}), 404
-    
-    # Generate scene content using Groq
-    scene_content = generate_scene(story.book_spec, story.outline, chapter, scene_number)
-    
-    # Get image for scene
-    image_url = get_image_for_scene(scene_content)
-    
-    # Generate audio for scene
-    audio_url = generate_audio_for_scene(scene_content)
-    
-    # Save to database
-    new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
-                      content=scene_content, image_url=image_url, audio_url=audio_url)
-    db.session.add(new_scene)
-    db.session.commit()
-    
-    return jsonify({
-        'scene_id': new_scene.id,
-        'content': scene_content,
-        'image_url': image_url,
-        'audio_url': audio_url
-    })
+    try:
+        story_id = request.json['story_id']
+        chapter = request.json['chapter']
+        scene_number = request.json['scene_number']
+        
+        story = Story.query.get(story_id)
+        if not story:
+            return jsonify({'error': 'Story not found'}), 404
+        
+        # Generate scene content using Groq
+        scene_content = generate_scene(story.book_spec, story.outline, chapter, scene_number)
+        
+        # Get image for scene
+        image_url = get_image_for_scene(scene_content)
+        
+        # Generate audio for scene
+        audio_url = generate_audio_for_scene(scene_content)
+        
+        # Save to database
+        new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
+                          content=scene_content, image_url=image_url, audio_url=audio_url)
+        db.session.add(new_scene)
+        db.session.commit()
+        
+        return jsonify({
+            'scene_id': new_scene.id,
+            'content': scene_content,
+            'image_url': image_url,
+            'audio_url': audio_url
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
