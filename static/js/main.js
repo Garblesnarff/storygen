@@ -72,14 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayScene(sceneData) {
-        console.log('Displaying scene with image URL:', sceneData.image_url);
+        console.log('Displaying scene:', sceneData);
         const sceneElement = document.createElement('div');
         sceneElement.className = 'mb-8 p-4 border rounded';
         sceneElement.innerHTML = `
             <h3 class="text-xl font-bold mb-2">Chapter ${sceneData.chapter}, Scene ${sceneData.scene_number}</h3>
-            <img src="${sceneData.image_url}" alt="Scene Image" class="scene-image mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
-            <p class="mb-4">${sceneData.content}</p>
-            <audio controls class="audio-player">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${sceneData.paragraphs.map(paragraph => `
+                    <div class="bg-white p-4 rounded shadow">
+                        <img src="${paragraph.image_url}" alt="Paragraph Image" class="w-full h-48 object-cover mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
+                        <p>${paragraph.content}</p>
+                    </div>
+                `).join('')}
+            </div>
+            <audio controls class="audio-player mt-4 w-full">
                 <source src="${sceneData.audio_url}" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>

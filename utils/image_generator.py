@@ -11,23 +11,6 @@ TOGETHER_API_KEY = os.environ.get('TOGETHER_API_KEY')
 
 together_client = Together(api_key=TOGETHER_API_KEY)
 
-def get_image_for_scene(scene_content):
-    try:
-        # Try Unsplash API first
-        unsplash_image_url = get_unsplash_image(scene_content)
-        if unsplash_image_url:
-            return unsplash_image_url
-        
-        # If Unsplash fails, use Flux API
-        flux_image_url = get_flux_image(scene_content)
-        if flux_image_url:
-            return flux_image_url
-    except Exception as e:
-        print(f"Error generating image: {e}")
-    
-    # If both APIs fail, return the placeholder image
-    return "/static/images/placeholder.svg"
-
 def get_unsplash_image(keywords):
     url = f"https://api.unsplash.com/photos/random?query={keywords}&client_id={UNSPLASH_ACCESS_KEY}"
     try:
@@ -39,10 +22,10 @@ def get_unsplash_image(keywords):
         print(f"Unsplash API error: {e}")
         return None
 
-def get_flux_image(scene_content):
+def get_flux_image(prompt):
     try:
         response = together_client.images.generate(
-            prompt=f"A scene depicting: {scene_content}",
+            prompt=f"A scene depicting: {prompt}",
             model="black-forest-labs/FLUX.1-schnell-Free",
             width=1024,
             height=768,
@@ -63,8 +46,16 @@ def get_flux_image(scene_content):
         print(f"Flux API error: {e}")
         return None
 
+def generate_images_for_paragraphs(paragraphs):
+    for paragraph in paragraphs:
+        image_url = get_flux_image(paragraph['content'])
+        if image_url:
+            paragraph['image_url'] = image_url
+        else:
+            paragraph['image_url'] = "/static/images/placeholder.svg"
+    return paragraphs
+
 def extract_keywords(scene_content):
-    # This is a simple keyword extraction. In a real application, you might want to use NLP techniques.
     words = scene_content.split()
-    keywords = [word for word in words if len(word) > 5][:5]  # Get the first 5 words with more than 5 characters
+    keywords = [word for word in words if len(word) > 5][:5]
     return " ".join(keywords)

@@ -2,7 +2,7 @@ import logging
 from flask import Blueprint, render_template, request, jsonify
 from models import db, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene
-from utils.image_generator import get_image_for_scene
+from utils.image_generator import generate_images_for_paragraphs
 from utils.text_to_speech import generate_audio_for_scene
 
 main_bp = Blueprint('main', __name__)
@@ -45,25 +45,26 @@ def generate_scene_route():
             return jsonify({'error': 'Story not found'}), 404
         
         # Generate scene content using Groq
-        scene_content = generate_scene(story.book_spec, story.outline, chapter, scene_number)
+        paragraphs = generate_scene(story.book_spec, story.outline, chapter, scene_number)
         
-        # Get image for scene
-        image_url = get_image_for_scene(scene_content)
-        logging.info(f"Generated image URL: {image_url}")
+        # Generate images for paragraphs
+        paragraphs_with_images = generate_images_for_paragraphs(paragraphs)
         
         # Generate audio for scene
+        scene_content = " ".join([p['content'] for p in paragraphs_with_images])
         audio_url = generate_audio_for_scene(scene_content)
         
         # Save to database
         new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
-                          content=scene_content, image_url=image_url, audio_url=audio_url)
+                          content=scene_content, audio_url=audio_url)
         db.session.add(new_scene)
         db.session.commit()
         
         response_data = {
             'scene_id': new_scene.id,
-            'content': scene_content,
-            'image_url': image_url,
+            'chapter': chapter,
+            'scene_number': scene_number,
+            'paragraphs': paragraphs_with_images,
             'audio_url': audio_url
         }
         logging.info(f"Response data: {response_data}")
