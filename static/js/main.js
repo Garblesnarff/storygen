@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 const data = await response.json();
+                console.log('Received scene data:', data);
                 
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to generate scene');
@@ -71,11 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayScene(sceneData) {
+        console.log('Displaying scene with image URL:', sceneData.image_url);
         const sceneElement = document.createElement('div');
         sceneElement.className = 'mb-8 p-4 border rounded';
         sceneElement.innerHTML = `
             <h3 class="text-xl font-bold mb-2">Chapter ${sceneData.chapter}, Scene ${sceneData.scene_number}</h3>
-            <img src="${sceneData.image_url}" alt="Scene Image" class="scene-image mb-4">
+            <img src="${sceneData.image_url}" alt="Scene Image" class="scene-image mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
             <p class="mb-4">${sceneData.content}</p>
             <audio controls class="audio-player">
                 <source src="${sceneData.audio_url}" type="audio/mpeg">

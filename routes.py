@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, render_template, request, jsonify
 from models import db, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene
@@ -5,6 +6,7 @@ from utils.image_generator import get_image_for_scene
 from utils.text_to_speech import generate_audio_for_scene
 
 main_bp = Blueprint('main', __name__)
+logging.basicConfig(level=logging.INFO)
 
 @main_bp.route('/')
 def index():
@@ -47,6 +49,7 @@ def generate_scene_route():
         
         # Get image for scene
         image_url = get_image_for_scene(scene_content)
+        logging.info(f"Generated image URL: {image_url}")
         
         # Generate audio for scene
         audio_url = generate_audio_for_scene(scene_content)
@@ -57,12 +60,15 @@ def generate_scene_route():
         db.session.add(new_scene)
         db.session.commit()
         
-        return jsonify({
+        response_data = {
             'scene_id': new_scene.id,
             'content': scene_content,
             'image_url': image_url,
             'audio_url': audio_url
-        })
+        }
+        logging.info(f"Response data: {response_data}")
+        return jsonify(response_data)
     except Exception as e:
+        logging.error(f"Error in generate_scene_route: {str(e)}")
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
