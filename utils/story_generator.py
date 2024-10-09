@@ -1,4 +1,5 @@
 import os
+import logging
 from groq import Groq
 import google.generativeai as genai
 
@@ -7,6 +8,8 @@ gemini_api_key = os.environ.get('GEMINI_API_KEY')
 
 groq_client = Groq(api_key=groq_api_key)
 genai.configure(api_key=gemini_api_key)
+
+logging.basicConfig(level=logging.INFO)
 
 def generate_book_spec(topic):
     prompt = f"Create a book specification for a story about {topic}. Include genre, setting, main characters, and a brief premise."
@@ -26,6 +29,7 @@ def generate_outline(book_spec):
     return response.text
 
 def generate_scene(book_spec, outline, chapter, scene_number):
+    logging.info(f"Generating scene for Chapter {chapter}, Scene {scene_number}")
     prompt = f"""
     Given this book specification and outline, write a detailed scene for Chapter {chapter}, Scene {scene_number}.
     
@@ -50,4 +54,5 @@ def generate_scene(book_spec, outline, chapter, scene_number):
     scene_content = completion.choices[0].message.content
     paragraphs = [p.strip() for p in scene_content.split('\n\n') if p.strip()]
     
+    logging.info(f"Generated {len(paragraphs)} paragraphs for the scene")
     return paragraphs

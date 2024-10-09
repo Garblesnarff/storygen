@@ -54,6 +54,7 @@ def get_flux_image(prompt):
         return None
 
 def generate_images_for_paragraphs(paragraphs):
+    logging.info(f"Generating images for {len(paragraphs)} paragraphs")
     for i, paragraph in enumerate(paragraphs):
         logging.info(f"Generating image for paragraph {i + 1}")
         image_url = get_flux_image(paragraph['content'])

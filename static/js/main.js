@@ -50,14 +50,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     }),
                 });
                 
-                const data = await response.json();
-                console.log('Received scene data:', data);
-                
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to generate scene');
+                    throw new Error('Failed to generate scene');
                 }
                 
-                displayScene(data);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            const data = JSON.parse(line);
+                            handleStreamedData(data);
+                        }
+                    }
+                }
                 
                 currentScene++;
                 if (currentScene > 3) {  // Assuming 3 scenes per chapter
@@ -71,25 +84,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function displayScene(sceneData) {
-        console.log('Displaying scene:', sceneData);
-        const sceneElement = document.createElement('div');
-        sceneElement.className = 'mb-8 p-4 border rounded';
-        sceneElement.innerHTML = `
-            <h3 class="text-xl font-bold mb-4">Chapter ${sceneData.chapter}, Scene ${sceneData.scene_number}</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                ${sceneData.paragraphs.map(paragraph => `
-                    <div class="bg-white p-4 rounded shadow">
-                        <img src="${paragraph.image_url}" alt="Paragraph Image" class="w-full h-48 object-cover mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
-                        <p class="paragraph-text">${paragraph.content}</p>
-                    </div>
-                `).join('')}
+    function handleStreamedData(data) {
+        switch (data.status) {
+            case 'generating_paragraphs':
+                updateProgressMessage('Generating paragraphs...');
+                break;
+            case 'image_generated':
+                displayParagraph(data.paragraph, data.index);
+                break;
+            case 'audio_generated':
+                displayAudio(data.audio_url);
+                break;
+            case 'complete':
+                updateProgressMessage('Scene generation complete!');
+                break;
+        }
+    }
+
+    function updateProgressMessage(message) {
+        const progressElement = document.getElementById('progress-message') || createProgressElement();
+        progressElement.textContent = message;
+    }
+
+    function createProgressElement() {
+        const progressElement = document.createElement('div');
+        progressElement.id = 'progress-message';
+        progressElement.className = 'mt-4 text-blue-600 font-bold';
+        sceneContainer.appendChild(progressElement);
+        return progressElement;
+    }
+
+    function displayParagraph(paragraph, index) {
+        const paragraphElement = document.createElement('div');
+        paragraphElement.className = 'mb-8 p-4 border rounded';
+        paragraphElement.innerHTML = `
+            <div class="bg-white p-4 rounded shadow">
+                <img src="${paragraph.image_url}" alt="Paragraph Image" class="w-full h-48 object-cover mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
+                <p class="paragraph-text">${paragraph.content}</p>
             </div>
-            <audio controls class="audio-player mt-4 w-full">
-                <source src="${sceneData.audio_url}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
         `;
-        sceneContainer.appendChild(sceneElement);
+        sceneContainer.appendChild(paragraphElement);
+    }
+
+    function displayAudio(audioUrl) {
+        const audioElement = document.createElement('audio');
+        audioElement.controls = true;
+        audioElement.className = 'audio-player mt-4 w-full';
+        audioElement.innerHTML = `
+            <source src="${audioUrl}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        `;
+        sceneContainer.appendChild(audioElement);
     }
 });
