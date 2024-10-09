@@ -46,16 +46,18 @@ def generate_scene_route():
             return jsonify({'error': 'Story not found'}), 404
         
         def generate():
+            yield json.dumps({"status": "generating_paragraphs"}) + "\n"
             logging.info("Starting scene generation")
             paragraphs = generate_scene(story.book_spec, story.outline, chapter, scene_number)
-            yield json.dumps({"status": "generating_paragraphs"}) + "\n"
-            
+            yield json.dumps({"status": "paragraphs_generated"}) + "\n"
+
             logging.info("Generating images for paragraphs")
             paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
             for i, para in enumerate(paragraphs_with_images):
                 yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
-            
+
             logging.info("Generating audio for scene")
+            yield json.dumps({"status": "generating_audio"}) + "\n"
             scene_content = " ".join([p['content'] for p in paragraphs_with_images])
             audio_url = generate_audio_for_scene(scene_content)
             yield json.dumps({"status": "audio_generated", "audio_url": audio_url}) + "\n"

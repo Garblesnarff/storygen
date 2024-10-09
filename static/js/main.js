@@ -33,11 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate First Scene</button>
         `;
 
+        // Add this line to create a loading indicator
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'loading-indicator';
+        loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
+        loadingIndicator.textContent = 'Generating scene...';
+        storyContainer.appendChild(loadingIndicator);
+
         let currentChapter = 1;
         let currentScene = 1;
 
         document.getElementById('generate-scene').addEventListener('click', async () => {
             try {
+                toggleLoadingIndicator(true);
                 const response = await fetch('/generate_scene', {
                     method: 'POST',
                     headers: {
@@ -80,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error:', error);
                 alert(`Failed to generate scene: ${error.message}`);
+            } finally {
+                toggleLoadingIndicator(false);
             }
         });
     }
@@ -89,14 +99,21 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'generating_paragraphs':
                 updateProgressMessage('Generating paragraphs...');
                 break;
+            case 'paragraphs_generated':
+                updateProgressMessage('Paragraphs generated. Generating images...');
+                break;
             case 'image_generated':
                 displayParagraph(data.paragraph, data.index);
+                break;
+            case 'generating_audio':
+                updateProgressMessage('Generating audio...');
                 break;
             case 'audio_generated':
                 displayAudio(data.audio_url);
                 break;
             case 'complete':
-                updateProgressMessage('Scene generation complete!');
+                updateProgressMessage('');
+                toggleLoadingIndicator(false);
                 break;
         }
     }
@@ -135,5 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
             Your browser does not support the audio element.
         `;
         sceneContainer.appendChild(audioElement);
+    }
+
+    function toggleLoadingIndicator(show) {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.className = `mt-4 text-blue-600 font-bold ${show ? '' : 'hidden'}`;
+        }
     }
 });
