@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, render_template, request, jsonify, Response
 from models import db, Story, Scene
-from utils.story_generator import generate_scene
+from utils.story_generator import generate_book_spec, generate_outline, generate_scene
 from utils.image_generator import generate_images_for_paragraphs
 from utils.text_to_speech import generate_audio_for_scene
 import json
