@@ -36,8 +36,8 @@ def generate_scene(book_spec, outline, chapter, scene_number):
     {outline}
     
     Write a vivid, engaging scene with dialogue and description. Divide the scene into 3-5 paragraphs.
-    Return a list of dictionaries, where each dictionary represents a paragraph with 'content' and 'image_url' keys.
-    The 'content' should only contain the actual text of the paragraph, without any labels or prefixes.
+    Return a list of paragraphs, where each paragraph is a simple string containing only the text content.
+    Do not include any JSON formatting or labels.
     """
     completion = groq_client.chat.completions.create(
         messages=[
@@ -50,4 +50,4 @@ def generate_scene(book_spec, outline, chapter, scene_number):
     scene_content = completion.choices[0].message.content
     paragraphs = [p.strip() for p in scene_content.split('\n\n') if p.strip()]
     
-    return [{'content': p, 'image_url': ''} for p in paragraphs]
+    return paragraphs

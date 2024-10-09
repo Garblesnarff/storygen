@@ -37,7 +37,7 @@ def get_flux_image(prompt):
         image = Image.open(BytesIO(base64.b64decode(image_data)))
         
         # Save the image to a file in the static/images directory
-        image_filename = f"generated_image_{int(time.time())}.png"
+        image_filename = f"generated_image_{int(time.time())}_{hash(prompt)[:8]}.png"
         image_path = os.path.join('static', 'images', image_filename)
         image.save(image_path)
         
@@ -48,7 +48,7 @@ def get_flux_image(prompt):
 
 def generate_images_for_paragraphs(paragraphs):
     for paragraph in paragraphs:
-        image_url = get_flux_image(paragraph['content'])
+        image_url = get_flux_image(paragraph)
         if image_url:
             paragraph['image_url'] = image_url
         else:

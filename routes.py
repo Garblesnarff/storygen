@@ -48,7 +48,7 @@ def generate_scene_route():
         paragraphs = generate_scene(story.book_spec, story.outline, chapter, scene_number)
         
         # Generate images for paragraphs
-        paragraphs_with_images = generate_images_for_paragraphs(paragraphs)
+        paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
         
         # Generate audio for scene
         scene_content = " ".join([p['content'] for p in paragraphs_with_images])
