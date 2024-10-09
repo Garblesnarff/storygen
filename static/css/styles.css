@@ -67,3 +67,29 @@
 .object-cover {
     object-fit: cover;
 }
+
+/* Improved paragraph styles */
+.paragraph-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    text-align: justify;
+    color: #333;
+}
+
+/* Improved scene container styles */
+.scene-container {
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Improved heading styles */
+h3 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}

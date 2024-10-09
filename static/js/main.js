@@ -76,12 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const sceneElement = document.createElement('div');
         sceneElement.className = 'mb-8 p-4 border rounded';
         sceneElement.innerHTML = `
-            <h3 class="text-xl font-bold mb-2">Chapter ${sceneData.chapter}, Scene ${sceneData.scene_number}</h3>
+            <h3 class="text-xl font-bold mb-4">Chapter ${sceneData.chapter}, Scene ${sceneData.scene_number}</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 ${sceneData.paragraphs.map(paragraph => `
                     <div class="bg-white p-4 rounded shadow">
                         <img src="${paragraph.image_url}" alt="Paragraph Image" class="w-full h-48 object-cover mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
-                        <p>${paragraph.content}</p>
+                        <p class="paragraph-text">${paragraph.content}</p>
                     </div>
                 `).join('')}
             </div>
