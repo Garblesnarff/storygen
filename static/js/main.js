@@ -27,9 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function displayStory(storyData) {
+        const bookSpec = storyData.book_spec.split('\n');
+        const logLine = bookSpec[1].replace('Log Line: ', '');
+        
         storyContainer.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Story Outline</h2>
-            <pre class="bg-gray-100 p-4 rounded">${storyData.outline}</pre>
+            <h2 class="text-2xl font-bold mb-4">Story Concept</h2>
+            <p class="mb-4"><strong>Log Line:</strong> ${logLine}</p>
+            <h3 class="text-xl font-bold mb-2">5-Act Structure</h3>
+            <pre class="bg-gray-100 p-4 rounded mb-4">${storyData.outline}</pre>
             <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate First Scene</button>
         `;
 
@@ -39,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
 
-        let currentChapter = 1;
+        let currentAct = 1;
         let currentScene = 1;
 
         document.getElementById('generate-scene').addEventListener('click', async () => {
@@ -52,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({
                         story_id: storyData.story_id,
-                        chapter: currentChapter,
+                        act: currentAct,
                         scene_number: currentScene,
                     }),
                 });
@@ -80,8 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 currentScene++;
-                if (currentScene > 3) {  // Assuming 3 scenes per chapter
-                    currentChapter++;
+                if (currentScene > 3) {  // Assuming 3 scenes per act
+                    currentAct++;
                     currentScene = 1;
                 }
             } catch (error) {

@@ -17,10 +17,10 @@ def index():
 def generate_story():
     topic = request.json['topic']
     
-    # Generate book specification using Groq
+    # Generate book specification using BrainstormingAgent
     book_spec = generate_book_spec(topic)
     
-    # Generate story outline using Gemini
+    # Generate story outline using StoryStructureAgent
     outline = generate_outline(book_spec)
     
     # Save to database
@@ -38,7 +38,7 @@ def generate_story():
 def generate_scene_route():
     try:
         story_id = request.json['story_id']
-        chapter = request.json['chapter']
+        act = request.json['act']
         scene_number = request.json['scene_number']
         
         story = Story.query.get(story_id)
@@ -48,7 +48,7 @@ def generate_scene_route():
         def generate():
             yield json.dumps({"status": "generating_paragraphs"}) + "\n"
             logging.info("Starting scene generation")
-            paragraphs = generate_scene(story.book_spec, story.outline, chapter, scene_number)
+            paragraphs = generate_scene(story.book_spec, story.outline, act, scene_number)
             yield json.dumps({"status": "paragraphs_generated"}) + "\n"
 
             logging.info("Generating images and audio for paragraphs")
@@ -61,7 +61,7 @@ def generate_scene_route():
 
             # Save to database
             scene_content = json.dumps(paragraphs_with_images)
-            new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
+            new_scene = Scene(story_id=story_id, chapter=act, scene_number=scene_number,
                               content=scene_content)
             db.session.add(new_scene)
             db.session.commit()

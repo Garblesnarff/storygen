@@ -1,58 +1,29 @@
-import os
+from utils.ai_agents import BrainstormingAgent, StoryStructureAgent, SceneCreationAgent
 import logging
-from groq import Groq
-import google.generativeai as genai
-
-groq_api_key = os.environ.get('GROQ_API_KEY')
-gemini_api_key = os.environ.get('GEMINI_API_KEY')
-
-groq_client = Groq(api_key=groq_api_key)
-genai.configure(api_key=gemini_api_key)
 
 logging.basicConfig(level=logging.INFO)
 
+brainstorming_agent = BrainstormingAgent()
+story_structure_agent = StoryStructureAgent()
+scene_creation_agent = SceneCreationAgent()
+
 def generate_book_spec(topic):
-    prompt = f"Create a book specification for a story about {topic}. Include genre, setting, main characters, and a brief premise."
-    completion = groq_client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant for fiction writing."},
-            {"role": "user", "content": prompt}
-        ],
-        model="mixtral-8x7b-32768",
-    )
-    return completion.choices[0].message.content
+    logging.info(f"Generating book specification for topic: {topic}")
+    log_line = brainstorming_agent.generate_log_line(topic)
+    book_spec = f"Topic: {topic}\nLog Line: {log_line}"
+    logging.info("Book specification generated successfully")
+    return book_spec
 
 def generate_outline(book_spec):
-    model = genai.GenerativeModel('gemini-pro')
-    prompt = f"Based on this book specification, create a detailed chapter-by-chapter outline for the story:\n\n{book_spec}"
-    response = model.generate_content(prompt)
-    return response.text
+    logging.info("Generating story outline")
+    log_line = book_spec.split("Log Line: ")[1]
+    outline = story_structure_agent.generate_5_act_structure(log_line)
+    logging.info("Story outline generated successfully")
+    return outline
 
-def generate_scene(book_spec, outline, chapter, scene_number):
-    logging.info(f"Generating scene for Chapter {chapter}, Scene {scene_number}")
-    prompt = f"""
-    Given this book specification and outline, write a detailed scene for Chapter {chapter}, Scene {scene_number}.
-    
-    Book Specification:
-    {book_spec}
-    
-    Outline:
-    {outline}
-    
-    Write a vivid, engaging scene with dialogue and description. Divide the scene into 3-5 paragraphs.
-    Return a list of paragraphs, where each paragraph is a simple string containing only the text content.
-    Do not include any JSON formatting or labels.
-    """
-    completion = groq_client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": "You are an expert fiction writer. Write detailed scenes with lively dialogue."},
-            {"role": "user", "content": prompt}
-        ],
-        model="mixtral-8x7b-32768",
-    )
-    
-    scene_content = completion.choices[0].message.content
+def generate_scene(book_spec, outline, act, scene_number):
+    logging.info(f"Generating scene for Act {act}, Scene {scene_number}")
+    scene_content = scene_creation_agent.generate_scene(outline, act, scene_number)
     paragraphs = [p.strip() for p in scene_content.split('\n\n') if p.strip()]
-    
     logging.info(f"Generated {len(paragraphs)} paragraphs for the scene")
     return paragraphs
