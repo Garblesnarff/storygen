@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="mb-4"><strong>Log Line:</strong> ${logLine}</p>
             <h3 class="text-xl font-bold mb-2">5-Act Structure</h3>
             <pre class="bg-gray-100 p-4 rounded mb-4">${storyData.outline}</pre>
-            <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate First Scene</button>
+            <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate Next Scene</button>
         `;
 
         const loadingIndicator = document.createElement('div');
@@ -44,13 +44,32 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
 
-        let currentAct = 1;
-        let currentChapter = 1;
-        let currentScene = 1;
-
         document.getElementById('generate-scene').addEventListener('click', async () => {
             try {
                 toggleLoadingIndicator(true);
+                
+                // Fetch the next scene to generate
+                const nextSceneResponse = await fetch('/get_next_scene', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        story_id: storyData.story_id,
+                    }),
+                });
+                
+                if (!nextSceneResponse.ok) {
+                    throw new Error('Failed to get next scene');
+                }
+                
+                const nextSceneData = await nextSceneResponse.json();
+                
+                if (nextSceneData.message === 'All scenes have been generated') {
+                    alert('Story complete!');
+                    return;
+                }
+                
                 const response = await fetch('/generate_scene', {
                     method: 'POST',
                     headers: {
@@ -58,9 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({
                         story_id: storyData.story_id,
-                        act: currentAct,
-                        chapter: currentChapter,
-                        scene_number: currentScene,
+                        act: nextSceneData.act,
+                        chapter: nextSceneData.chapter,
+                        scene_number: nextSceneData.scene_number,
                     }),
                 });
                 
@@ -82,20 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (line.trim()) {
                             const data = JSON.parse(line);
                             handleStreamedData(data);
-                        }
-                    }
-                }
-                
-                currentScene++;
-                if (currentScene > 3) {
-                    currentChapter++;
-                    currentScene = 1;
-                    if (currentChapter > 5) {
-                        currentAct++;
-                        currentChapter = 1;
-                        if (currentAct > 5) {
-                            alert('Story complete!');
-                            return;
                         }
                     }
                 }
