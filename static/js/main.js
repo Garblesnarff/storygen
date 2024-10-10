@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayParagraph(data.paragraph, data.index);
                 break;
             case 'complete':
-                updateProgressMessage('');
+                updateProgressMessage('Scene generation complete');
                 toggleLoadingIndicator(false);
                 break;
         }
