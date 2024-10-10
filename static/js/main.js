@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate First Scene</button>
         `;
 
-        // Add this line to create a loading indicator
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'loading-indicator';
         loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
@@ -133,10 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayParagraph(paragraph, index) {
         const paragraphElement = document.createElement('div');
-        paragraphElement.className = 'mb-8 p-4 border rounded';
+        paragraphElement.className = 'card mb-8 p-4 border rounded';
         paragraphElement.innerHTML = `
-            <div class="bg-white p-4 rounded shadow">
-                <img src="${paragraph.image_url}" alt="Paragraph Image" class="w-full h-48 object-cover mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
+            <div class="card-content bg-white p-4 rounded shadow">
+                <img src="${paragraph.image_url}" alt="Paragraph Image" class="scene-image mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
                 <p class="paragraph-text">${paragraph.content}</p>
             </div>
         `;

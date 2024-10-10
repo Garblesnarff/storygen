@@ -9,6 +9,20 @@
 .scene-image {
     max-width: 100%;
     height: auto;
+    object-fit: contain;
+    max-height: 300px; /* Adjust this value as needed */
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 600px; /* Adjust this value as needed */
+    margin: 0 auto 2rem auto;
+}
+
+.card-content {
+    width: 100%;
 }
 
 .audio-player {
@@ -33,39 +47,6 @@
     .lg\:grid-cols-3 {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-}
-
-/* Card styles */
-.bg-white {
-    background-color: white;
-}
-
-.shadow {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-}
-
-.rounded {
-    border-radius: 0.25rem;
-}
-
-.p-4 {
-    padding: 1rem;
-}
-
-.mb-4 {
-    margin-bottom: 1rem;
-}
-
-.w-full {
-    width: 100%;
-}
-
-.h-48 {
-    height: 12rem;
-}
-
-.object-cover {
-    object-fit: cover;
 }
 
 /* Improved paragraph styles */
