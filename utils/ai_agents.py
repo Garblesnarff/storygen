@@ -28,7 +28,16 @@ class StoryStructureAgent:
         self.model = "llama-3.1-70b-versatile"
 
     def generate_5_act_structure(self, log_line):
-        prompt = f"Based on this log line: '{log_line}', generate a 5-act story structure. Include a brief description for each act: Exposition, Rising Action, Climax, Falling Action, and Resolution."
+        prompt = f'''Based on this log line: '{log_line}', generate a detailed 5-act story structure. 
+        For each act, provide 3-5 chapters, and for each chapter, provide a brief description.
+        
+        Format:
+        Act 1: Exposition
+        - Chapter 1: [Brief description]
+        - Chapter 2: [Brief description]
+        - Chapter 3: [Brief description]
+        (Continue for Acts 2-5)'''
+
         completion = groq_client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You are an expert story structure creator."},
@@ -42,14 +51,44 @@ class SceneCreationAgent:
     def __init__(self):
         self.model = genai.GenerativeModel('gemini-1.5-flash')
 
-    def generate_scene(self, act_structure, act_number, scene_number):
-        prompt = f"""
+    def generate_chapter_scenes(self, act_structure, act_number, chapter_number):
+        prompt = f'''
         Based on this 5-act story structure:
         {act_structure}
         
-        Generate a detailed scene for Act {act_number}, Scene {scene_number}. 
-        Include character interactions, dialogue, and vivid descriptions. 
-        Aim for 3-5 paragraphs.
-        """
+        Generate 3 detailed scenes for Act {act_number}, Chapter {chapter_number}. 
+        For each scene, provide:
+        1. Scene setting
+        2. Characters involved
+        3. Main action or conflict
+        4. Outcome or cliffhanger
+        
+        Format:
+        Scene 1:
+        [Scene details]
+
+        Scene 2:
+        [Scene details]
+
+        Scene 3:
+        [Scene details]
+        '''
+        response = self.model.generate_content(prompt)
+        return response.text
+
+    def generate_scene(self, act_structure, act_number, chapter_number, scene_number):
+        prompt = f'''
+        Based on this 5-act story structure:
+        {act_structure}
+        
+        Generate a detailed scene for Act {act_number}, Chapter {chapter_number}, Scene {scene_number}. 
+        Include:
+        1. Vivid description of the setting
+        2. Character interactions and dialogue
+        3. Conflict or tension in the scene
+        4. How this scene advances the overall plot
+        
+        Aim for 3-5 paragraphs of engaging, show-don't-tell storytelling.
+        '''
         response = self.model.generate_content(prompt)
         return response.text

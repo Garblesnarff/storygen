@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, render_template, request, jsonify, Response
 from models import db, Story, Scene
-from utils.story_generator import generate_book_spec, generate_outline, generate_scene
+from utils.story_generator import generate_book_spec, generate_outline, generate_scene, generate_chapter_scenes
 from utils.image_generator import generate_images_for_paragraphs
 from utils.text_to_speech import generate_audio_for_scene
 import json
@@ -39,6 +39,7 @@ def generate_scene_route():
     try:
         story_id = request.json['story_id']
         act = request.json['act']
+        chapter = request.json['chapter']
         scene_number = request.json['scene_number']
         
         story = Story.query.get(story_id)
@@ -48,7 +49,7 @@ def generate_scene_route():
         def generate():
             yield json.dumps({"status": "generating_paragraphs"}) + "\n"
             logging.info("Starting scene generation")
-            paragraphs = generate_scene(story.book_spec, story.outline, act, scene_number)
+            paragraphs = generate_scene(story.book_spec, story.outline, act, chapter, scene_number)
             yield json.dumps({"status": "paragraphs_generated"}) + "\n"
 
             logging.info("Generating images and audio for paragraphs")
@@ -61,7 +62,7 @@ def generate_scene_route():
 
             # Save to database
             scene_content = json.dumps(paragraphs_with_images)
-            new_scene = Scene(story_id=story_id, chapter=act, scene_number=scene_number,
+            new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
                               content=scene_content)
             db.session.add(new_scene)
             db.session.commit()
@@ -72,4 +73,26 @@ def generate_scene_route():
     except Exception as e:
         logging.error(f"Error in generate_scene_route: {str(e)}")
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/generate_chapter_scenes', methods=['POST'])
+def generate_chapter_scenes_route():
+    try:
+        story_id = request.json['story_id']
+        act = request.json['act']
+        chapter = request.json['chapter']
+        
+        story = Story.query.get(story_id)
+        if not story:
+            return jsonify({'error': 'Story not found'}), 404
+        
+        scenes = generate_chapter_scenes(story.book_spec, story.outline, act, chapter)
+        
+        return jsonify({
+            'act': act,
+            'chapter': chapter,
+            'scenes': scenes
+        })
+    except Exception as e:
+        logging.error(f"Error in generate_chapter_scenes_route: {str(e)}")
         return jsonify({'error': str(e)}), 500

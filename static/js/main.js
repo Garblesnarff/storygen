@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         storyContainer.appendChild(loadingIndicator);
 
         let currentAct = 1;
+        let currentChapter = 1;
         let currentScene = 1;
 
         document.getElementById('generate-scene').addEventListener('click', async () => {
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         story_id: storyData.story_id,
                         act: currentAct,
+                        chapter: currentChapter,
                         scene_number: currentScene,
                     }),
                 });
@@ -85,9 +87,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 currentScene++;
-                if (currentScene > 3) {  // Assuming 3 scenes per act
-                    currentAct++;
+                if (currentScene > 3) {
+                    currentChapter++;
                     currentScene = 1;
+                    if (currentChapter > 5) {
+                        currentAct++;
+                        currentChapter = 1;
+                        if (currentAct > 5) {
+                            alert('Story complete!');
+                            return;
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);

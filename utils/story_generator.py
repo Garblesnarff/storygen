@@ -21,9 +21,15 @@ def generate_outline(book_spec):
     logging.info("Story outline generated successfully")
     return outline
 
-def generate_scene(book_spec, outline, act, scene_number):
-    logging.info(f"Generating scene for Act {act}, Scene {scene_number}")
-    scene_content = scene_creation_agent.generate_scene(outline, act, scene_number)
+def generate_scene(book_spec, outline, act, chapter, scene_number):
+    logging.info(f"Generating scene for Act {act}, Chapter {chapter}, Scene {scene_number}")
+    scene_content = scene_creation_agent.generate_scene(outline, act, chapter, scene_number)
     paragraphs = [p.strip() for p in scene_content.split('\n\n') if p.strip()]
     logging.info(f"Generated {len(paragraphs)} paragraphs for the scene")
     return paragraphs
+
+def generate_chapter_scenes(book_spec, outline, act, chapter):
+    logging.info(f"Generating scenes for Act {act}, Chapter {chapter}")
+    scenes = scene_creation_agent.generate_chapter_scenes(outline, act, chapter)
+    logging.info(f"Generated scenes for Chapter {chapter}")
+    return scenes
