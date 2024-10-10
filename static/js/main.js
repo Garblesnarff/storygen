@@ -99,16 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProgressMessage('Generating paragraphs...');
                 break;
             case 'paragraphs_generated':
-                updateProgressMessage('Paragraphs generated. Generating images...');
+                updateProgressMessage('Paragraphs generated. Generating images and audio...');
                 break;
             case 'image_generated':
                 displayParagraph(data.paragraph, data.index);
-                break;
-            case 'generating_audio':
-                updateProgressMessage('Generating audio...');
-                break;
-            case 'audio_generated':
-                displayAudio(data.audio_url);
                 break;
             case 'complete':
                 updateProgressMessage('');
@@ -137,20 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="card-content bg-white p-4 rounded shadow">
                 <img src="${paragraph.image_url}" alt="Paragraph Image" class="scene-image mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
                 <p class="paragraph-text">${paragraph.content}</p>
+                <audio controls class="audio-player mt-4 w-full">
+                    <source src="${paragraph.audio_url}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
-    }
-
-    function displayAudio(audioUrl) {
-        const audioElement = document.createElement('audio');
-        audioElement.controls = true;
-        audioElement.className = 'audio-player mt-4 w-full';
-        audioElement.innerHTML = `
-            <source src="${audioUrl}" type="audio/mpeg">
-            Your browser does not support the audio element.
-        `;
-        sceneContainer.appendChild(audioElement);
     }
 
     function toggleLoadingIndicator(show) {

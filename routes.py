@@ -51,20 +51,18 @@ def generate_scene_route():
             paragraphs = generate_scene(story.book_spec, story.outline, chapter, scene_number)
             yield json.dumps({"status": "paragraphs_generated"}) + "\n"
 
-            logging.info("Generating images for paragraphs")
+            logging.info("Generating images and audio for paragraphs")
             paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
             for i, para in enumerate(paragraphs_with_images):
+                logging.info(f"Generating audio for paragraph {i+1}")
+                audio_url = generate_audio_for_scene(para['content'])
+                para['audio_url'] = audio_url
                 yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
 
-            logging.info("Generating audio for scene")
-            yield json.dumps({"status": "generating_audio"}) + "\n"
-            scene_content = " ".join([p['content'] for p in paragraphs_with_images])
-            audio_url = generate_audio_for_scene(scene_content)
-            yield json.dumps({"status": "audio_generated", "audio_url": audio_url}) + "\n"
-            
             # Save to database
+            scene_content = json.dumps(paragraphs_with_images)
             new_scene = Scene(story_id=story_id, chapter=chapter, scene_number=scene_number,
-                              content=scene_content, audio_url=audio_url)
+                              content=scene_content)
             db.session.add(new_scene)
             db.session.commit()
             
