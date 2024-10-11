@@ -74,3 +74,11 @@ h3 {
     border-bottom: 2px solid #3498db;
     padding-bottom: 0.5rem;
 }
+
+/* New styles for act-structure */
+.act-structure {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 100%;
+    overflow-x: auto;
+}

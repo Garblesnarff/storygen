@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h2 class="text-2xl font-bold mb-4">Story Concept</h2>
             <p class="mb-4"><strong>Log Line:</strong> ${logLine}</p>
             <h3 class="text-xl font-bold mb-2">5-Act Structure</h3>
-            <pre class="bg-gray-100 p-4 rounded mb-4">${storyData.outline}</pre>
+            <div class="act-structure bg-gray-100 p-4 rounded mb-4">${storyData.outline}</div>
             <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate Next Scene</button>
         `;
 
