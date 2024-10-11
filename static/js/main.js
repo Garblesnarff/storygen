@@ -16,7 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ topic }),
             });
             
-            if (!response.ok) throw new Error('Failed to generate story');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate story');
+            }
             
             const data = await response.json();
             displayStory(data);
@@ -44,78 +47,80 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
 
-        document.getElementById('generate-scene').addEventListener('click', async () => {
-            try {
-                toggleLoadingIndicator(true);
+        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
+    }
+
+    async function generateNextScene() {
+        try {
+            toggleLoadingIndicator(true);
+            
+            const nextSceneResponse = await fetch('/get_next_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    story_id: storyData.story_id,
+                }),
+            });
+            
+            if (!nextSceneResponse.ok) {
+                const errorData = await nextSceneResponse.json();
+                throw new Error(errorData.error || 'Failed to get next scene');
+            }
+            
+            const nextSceneData = await nextSceneResponse.json();
+            
+            if (nextSceneData.message === 'All scenes have been generated') {
+                alert('Story complete!');
+                return;
+            }
+            
+            const response = await fetch('/generate_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    story_id: storyData.story_id,
+                    act: nextSceneData.act,
+                    chapter: nextSceneData.chapter,
+                    scene_number: nextSceneData.scene_number,
+                }),
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate scene');
+            }
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
                 
-                // Fetch the next scene to generate
-                const nextSceneResponse = await fetch('/get_next_scene', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        story_id: storyData.story_id,
-                    }),
-                });
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
                 
-                if (!nextSceneResponse.ok) {
-                    throw new Error('Failed to get next scene');
-                }
-                
-                const nextSceneData = await nextSceneResponse.json();
-                
-                if (nextSceneData.message === 'All scenes have been generated') {
-                    alert('Story complete!');
-                    return;
-                }
-                
-                const response = await fetch('/generate_scene', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        story_id: storyData.story_id,
-                        act: nextSceneData.act,
-                        chapter: nextSceneData.chapter,
-                        scene_number: nextSceneData.scene_number,
-                    }),
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to generate scene');
-                }
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.trim()) {
-                            try {
-                                const data = JSON.parse(line);
-                                handleStreamedData(data);
-                            } catch (error) {
-                                console.error('Error parsing JSON:', error);
-                            }
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            const data = JSON.parse(line);
+                            handleStreamedData(data);
+                        } catch (error) {
+                            console.error('Error parsing JSON:', error, 'Raw data:', line);
                         }
                     }
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert(`Failed to generate scene: ${error.message}`);
-            } finally {
-                toggleLoadingIndicator(false);
             }
-        });
+        } catch (error) {
+            console.error('Error:', error);
+            alert(`Failed to generate scene: ${error.message}`);
+        } finally {
+            toggleLoadingIndicator(false);
+        }
     }
 
     function handleStreamedData(data) {
@@ -133,6 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProgressMessage('Scene generation complete');
                 toggleLoadingIndicator(false);
                 break;
+            default:
+                console.warn('Unknown status:', data.status);
         }
     }
 

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>My Stories</h2>
+    {% if stories %}
+        <ul class="list-group">
+        {% for story in stories %}
+            <li class="list-group-item">
+                <h3>{{ story.topic }}</h3>
+                <p><strong>Created:</strong> {{ story.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                <a href="{{ url_for('main.index', story_id=story.id) }}" class="btn btn-primary">Continue Story</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You haven't created any stories yet.</p>
+    {% endif %}
+    <a href="{{ url_for('main.index') }}" class="btn btn-success mt-3">Create New Story</a>
+</div>
+{% endblock %}
