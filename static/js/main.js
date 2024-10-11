@@ -84,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to generate scene');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to generate scene');
                 }
                 
                 const reader = response.body.getReader();
@@ -99,8 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     for (const line of lines) {
                         if (line.trim()) {
-                            const data = JSON.parse(line);
-                            handleStreamedData(data);
+                            try {
+                                const data = JSON.parse(line);
+                                handleStreamedData(data);
+                            } catch (error) {
+                                console.error('Error parsing JSON:', error);
+                            }
                         }
                     }
                 }

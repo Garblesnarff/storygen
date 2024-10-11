@@ -82,10 +82,10 @@ def generate_scene_route():
         scene_number = request.json['scene_number']
         
         def generate():
-            yield json.dumps({"status": "generating_paragraphs"}) + "\n"
-            logging.info("Starting scene generation")
-            
             with current_app.app_context():
+                yield json.dumps({"status": "generating_paragraphs"}) + "\n"
+                logging.info("Starting scene generation")
+                
                 story = Story.query.get(story_id)
                 if not story:
                     yield json.dumps({"error": "Story not found"}) + "\n"
