@@ -31,11 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
         storyContainer.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Story Concept</h2>
-            <p class="mb-4"><strong>Log Line:</strong> ${logLine}</p>
-            <h3 class="text-xl font-bold mb-2">5-Act Structure</h3>
-            <div class="act-structure bg-gray-100 p-4 rounded mb-4">${storyData.outline}</div>
-            <button id="generate-scene" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">Generate Next Scene</button>
+            <h2>Story Concept</h2>
+            <p><strong>Log Line:</strong> ${logLine}</p>
+            <h3>5-Act Structure</h3>
+            <div class="act-structure">${storyData.outline}</div>
+            <button id="generate-scene">Generate Next Scene</button>
         `;
 
         const loadingIndicator = document.createElement('div');
@@ -151,12 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayParagraph(paragraph, index) {
         const paragraphElement = document.createElement('div');
-        paragraphElement.className = 'card mb-8 p-4 border rounded';
+        paragraphElement.className = 'card';
         paragraphElement.innerHTML = `
-            <div class="card-content bg-white p-4 rounded shadow">
-                <img src="${paragraph.image_url}" alt="Paragraph Image" class="scene-image mb-4" onerror="this.onerror=null; this.src='/static/images/placeholder.svg';">
+            <div class="card-content">
+                <img src="${paragraph.image_url}" alt="Scene Image" class="scene-image">
                 <p class="paragraph-text">${paragraph.content}</p>
-                <audio controls class="audio-player mt-4 w-full">
+                <audio controls class="audio-player">
                     <source src="${paragraph.audio_url}" type="audio/mpeg">
                     Your browser does not support the audio element.
                 </audio>
