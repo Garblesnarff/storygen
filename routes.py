@@ -1,5 +1,5 @@
 import logging
-from flask import Blueprint, render_template, request, jsonify, Response, current_app
+from flask import Blueprint, render_template, request, jsonify, Response
 from models import db, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene, generate_chapter_scenes
 from utils.image_generator import generate_images_for_paragraphs
@@ -81,36 +81,33 @@ def generate_scene_route():
         chapter = request.json['chapter']
         scene_number = request.json['scene_number']
         
+        story = Story.query.get(story_id)
+        if not story:
+            return jsonify({"error": "Story not found"}), 404
+
         def generate():
-            with current_app.app_context():
-                yield json.dumps({"status": "generating_paragraphs"}) + "\n"
-                logging.info("Starting scene generation")
-                
-                story = Story.query.get(story_id)
-                if not story:
-                    yield json.dumps({"error": "Story not found"}) + "\n"
-                    return
+            yield json.dumps({"status": "generating_paragraphs"}) + "\n"
+            logging.info("Starting scene generation")
 
-                paragraphs = generate_scene(story.book_spec, story.outline, act, chapter, scene_number)
-                yield json.dumps({"status": "paragraphs_generated"}) + "\n"
+            paragraphs = generate_scene(story.book_spec, story.outline, act, chapter, scene_number)
+            yield json.dumps({"status": "paragraphs_generated"}) + "\n"
 
-                logging.info("Generating images and audio for paragraphs")
-                paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
-                for i, para in enumerate(paragraphs_with_images):
-                    logging.info(f"Generating audio for paragraph {i+1}")
-                    audio_url = generate_audio_for_scene(para['content'])
-                    para['audio_url'] = audio_url
-                    yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
+            logging.info("Generating images and audio for paragraphs")
+            paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
+            for i, para in enumerate(paragraphs_with_images):
+                logging.info(f"Generating audio for paragraph {i+1}")
+                audio_url = generate_audio_for_scene(para['content'])
+                para['audio_url'] = audio_url
+                yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
 
-                # Save to database
-                scene_content = json.dumps(paragraphs_with_images)
-                scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
-                if scene:
-                    scene.content = scene_content
-                    scene.is_generated = True
-                    db.session.commit()
-                
-                yield json.dumps({"status": "complete", "scene_id": scene.id}) + "\n"
+            scene_content = json.dumps(paragraphs_with_images)
+            scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
+            if scene:
+                scene.content = scene_content
+                scene.is_generated = True
+                db.session.commit()
+            
+            yield json.dumps({"status": "complete", "scene_id": scene.id}) + "\n"
         
         return Response(generate(), mimetype='text/event-stream')
     except Exception as e:
@@ -125,12 +122,11 @@ def generate_chapter_scenes_route():
         act = request.json['act']
         chapter = request.json['chapter']
         
-        with current_app.app_context():
-            story = Story.query.get(story_id)
-            if not story:
-                return jsonify({'error': 'Story not found'}), 404
+        story = Story.query.get(story_id)
+        if not story:
+            return jsonify({'error': 'Story not found'}), 404
         
-            scenes = generate_chapter_scenes(story.book_spec, story.outline, act, chapter)
+        scenes = generate_chapter_scenes(story.book_spec, story.outline, act, chapter)
         
         return jsonify({
             'act': act,
