@@ -47,7 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
 
-        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
+        addGenerateSceneListener();
+    }
+
+    function addGenerateSceneListener() {
+        const generateSceneButton = document.getElementById('generate-scene');
+        if (generateSceneButton) {
+            generateSceneButton.addEventListener('click', generateNextScene);
+        }
     }
 
     async function generateNextScene() {
