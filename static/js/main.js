@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storyForm = document.getElementById('story-form');
     const storyContainer = document.getElementById('story-container');
     const sceneContainer = document.getElementById('scene-container');
+    let storyData;
 
     storyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -21,15 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Failed to generate story');
             }
             
-            const data = await response.json();
-            displayStory(data);
+            storyData = await response.json();
+            displayStory(storyData);
         } catch (error) {
             console.error('Error:', error);
             alert('Failed to generate story. Please try again.');
         }
     });
 
-    function displayStory(storyData) {
+    function displayStory(data) {
+        storyData = data;  // Store the story data
         const bookSpec = storyData.book_spec.split('\n');
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
@@ -38,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Log Line:</strong> ${logLine}</p>
             <h3>5-Act Structure</h3>
             <div class="act-structure">${storyData.outline}</div>
-            <button id="generate-scene">Generate Next Scene</button>
+            <button id="generate-scene" disabled>Generate Next Scene</button>
         `;
 
         const loadingIndicator = document.createElement('div');
@@ -46,6 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
+
+        const generateSceneButton = document.getElementById('generate-scene');
+        generateSceneButton.disabled = false;
 
         addGenerateSceneListener();
     }
@@ -58,6 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateNextScene() {
+        if (!storyData) {
+            alert('Please generate a story first.');
+            return;
+        }
+
         try {
             toggleLoadingIndicator(true);
             
