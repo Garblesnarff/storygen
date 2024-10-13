@@ -203,3 +203,17 @@ def my_stories():
     user = User.query.get(session['user_id'])
     stories = Story.query.filter_by(user_id=user.id).order_by(Story.created_at.desc()).all()
     return render_template('my_stories.html', stories=stories)
+
+@main_bp.route('/story/<int:story_id>')
+def view_story(story_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to view a story.')
+        return redirect(url_for('main.login'))
+    
+    story = Story.query.filter_by(id=story_id, user_id=session['user_id']).first()
+    if not story:
+        flash('Story not found or you do not have permission to view it.')
+        return redirect(url_for('main.my_stories'))
+    
+    scenes = Scene.query.filter_by(story_id=story.id).order_by(Scene.act, Scene.chapter, Scene.scene_number).all()
+    return render_template('view_story.html', story=story, scenes=scenes)
