@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from models import db, User, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene, generate_chapter_scenes
-from utils.image_generator import generate_images_for_paragraphs
+from utils.image_generator import generate_images_for_paragraphs, get_flux_image
 from utils.text_to_speech import generate_audio_for_scene
 import json
 
@@ -214,3 +214,37 @@ def continue_story(story_id):
         return redirect(url_for('main.my_stories'))
     
     return render_template('continue_story.html', story=story)
+
+@main_bp.route('/regenerate_image', methods=['POST'])
+@login_required
+def regenerate_image():
+    try:
+        story_id = request.json['story_id']
+        paragraph_index = request.json['paragraph_index']
+
+        story = Story.query.filter_by(id=story_id, user_id=current_user.id).first()
+        if not story:
+            return jsonify({'error': 'Story not found or you do not have permission to access it.'}), 404
+
+        scene = Scene.query.filter_by(story_id=story_id, is_generated=True).order_by(Scene.act, Scene.chapter, Scene.scene_number).first()
+        if not scene:
+            return jsonify({'error': 'No generated scene found for this story.'}), 404
+
+        paragraphs = json.loads(scene.content)
+        if paragraph_index < 0 or paragraph_index >= len(paragraphs):
+            return jsonify({'error': 'Invalid paragraph index.'}), 400
+
+        paragraph = paragraphs[paragraph_index]
+        new_image_url = get_flux_image(paragraph['content'])
+
+        if new_image_url:
+            paragraph['image_url'] = new_image_url
+            scene.content = json.dumps(paragraphs)
+            db.session.commit()
+            return jsonify({'new_image_url': new_image_url})
+        else:
+            return jsonify({'error': 'Failed to generate new image.'}), 500
+
+    except Exception as e:
+        logging.error(f"Error in regenerate_image: {str(e)}")
+        return jsonify({'error': str(e)}), 500

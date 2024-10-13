@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
-        // Add event listener directly
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
@@ -184,7 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
         paragraphElement.innerHTML = `
             <div class="card-content">
                 <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
+                <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
                 <p class="paragraph-text">${paragraph.content || 'No content available'}</p>
+                <textarea class="edit-paragraph-text" rows="5">${paragraph.content || ''}</textarea>
                 ${paragraph.audio_url ? `
                     <audio controls class="audio-player">
                         <source src="${paragraph.audio_url}" type="audio/mpeg">
@@ -194,6 +195,47 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
+
+        // Add event listener for the Regenerate Image button
+        const regenerateBtn = paragraphElement.querySelector('.regenerate-image-btn');
+        regenerateBtn.addEventListener('click', () => regenerateImage(index));
+
+        // Add event listener for the edit paragraph textarea
+        const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
+        editTextarea.addEventListener('input', () => updateParagraphContent(index, editTextarea.value));
+    }
+
+    async function regenerateImage(index) {
+        try {
+            const response = await fetch('/regenerate_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    story_id: storyData.story_id,
+                    paragraph_index: index,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to regenerate image');
+            }
+
+            const data = await response.json();
+            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+            const imageElement = paragraphElement.querySelector('.scene-image');
+            imageElement.src = data.new_image_url;
+        } catch (error) {
+            console.error('Error in regenerateImage:', error);
+            alert('Failed to regenerate image. Please try again.');
+        }
+    }
+
+    function updateParagraphContent(index, newContent) {
+        // For now, we'll just log the update. In a real application, you'd want to send this to the server.
+        console.log('Updating content for paragraph', index, newContent);
+        // Here you could add logic to send the updated content to the server
     }
 
     function toggleLoadingIndicator(show) {
@@ -202,4 +244,25 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingIndicator.className = `mt-4 text-blue-600 font-bold ${show ? '' : 'hidden'}`;
         }
     }
+
+    // Add CSS styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .edit-paragraph-text {
+            width: 100%;
+            min-height: 100px;
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: inherit;
+            resize: vertical;
+        }
+        .regenerate-image-btn {
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+    `;
+    document.head.appendChild(style);
 });
