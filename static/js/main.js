@@ -258,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add CSS styles
     const style = document.createElement('style');
     style.textContent = `
         .edit-paragraph-text {

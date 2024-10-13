@@ -64,20 +64,19 @@ def logout():
 @login_required
 def generate_story():
     try:
-        topic = request.json['topic']
+        data = request.get_json()
+        if not data or 'topic' not in data:
+            return jsonify({'success': False, 'error': 'Invalid request data'}), 400
+
+        topic = data['topic']
         
-        # Generate book specification using BrainstormingAgent
         book_spec = generate_book_spec(topic)
-        
-        # Generate story outline using StoryStructureAgent
         outline = generate_outline(book_spec)
         
-        # Save to database
         new_story = Story(user_id=current_user.id, topic=topic, book_spec=book_spec, outline=outline)
         db.session.add(new_story)
         db.session.commit()
         
-        # Create initial scenes
         acts = 5
         chapters_per_act = 5
         scenes_per_chapter = 3
@@ -97,15 +96,23 @@ def generate_story():
         
         db.session.commit()
         
-        return jsonify({
+        response_data = {
             'success': True,
             'story_id': new_story.id,
             'book_spec': book_spec,
             'outline': outline
-        })
+        }
+        
+        try:
+            return jsonify(response_data)
+        except Exception as json_error:
+            logging.error(f"JSON serialization error: {str(json_error)}")
+            return jsonify({'success': False, 'error': 'Error serializing response'}), 500
+        
     except Exception as e:
         logging.error(f"Error in generate_story: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'An unexpected error occurred'}), 500
 
 @main_bp.route('/get_next_scene', methods=['POST'])
 @login_required
@@ -115,7 +122,6 @@ def get_next_scene():
     if not story:
         return jsonify({'error': 'Story not found or you do not have permission to access it.'}), 404
 
-    # Find the next scene that hasn't been generated
     next_scene = Scene.query.filter_by(story_id=story_id, is_generated=False).order_by(Scene.act, Scene.chapter, Scene.scene_number).first()
 
     if next_scene:
@@ -274,7 +280,6 @@ def edit_scene():
         scene.content = json.dumps([{'content': new_content}])
         db.session.commit()
         
-        # Regenerate image for the edited content
         new_image_url = get_flux_image(new_content)
         if new_image_url:
             scene_content = json.loads(scene.content)
