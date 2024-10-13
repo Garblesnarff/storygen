@@ -43,7 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
+        // Add event listener directly
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
+
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'loading-indicator';
+        loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
+        loadingIndicator.textContent = 'Generating scene...';
+        storyContainer.appendChild(loadingIndicator);
     }
 
     async function generateNextScene() {
@@ -53,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            toggleLoadingIndicator(true);
+            
             const nextSceneResponse = await fetch('/get_next_scene', {
                 method: 'POST',
                 headers: {
@@ -117,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
             alert(`Failed to generate scene: ${error.message}`);
+        } finally {
+            toggleLoadingIndicator(false);
         }
     }
 
@@ -142,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'complete':
                 updateProgressMessage('Scene generation complete');
+                toggleLoadingIndicator(false);
                 break;
             default:
                 console.warn('Unknown status:', data.status);
@@ -172,11 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         paragraphElement.innerHTML = `
             <div class="card-content">
                 <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
-                <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
                 <p class="paragraph-text">${paragraph.content || 'No content available'}</p>
-                <button class="edit-paragraph-btn" data-index="${index}">Edit</button>
-                <textarea class="edit-paragraph-text" rows="5" style="display: none;">${paragraph.content || ''}</textarea>
-                <button class="save-edit-btn" data-index="${index}" style="display: none;">Save Edit</button>
                 ${paragraph.audio_url ? `
                     <audio controls class="audio-player">
                         <source src="${paragraph.audio_url}" type="audio/mpeg">
@@ -186,119 +194,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
-
-        const regenerateBtn = paragraphElement.querySelector('.regenerate-image-btn');
-        regenerateBtn.addEventListener('click', () => regenerateImage(index));
-
-        const editBtn = paragraphElement.querySelector('.edit-paragraph-btn');
-        editBtn.addEventListener('click', () => editParagraph(index));
-
-        const saveEditBtn = paragraphElement.querySelector('.save-edit-btn');
-        saveEditBtn.addEventListener('click', () => saveEdit(index));
     }
 
-    function editParagraph(index) {
-        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-        const paragraphText = paragraphElement.querySelector('.paragraph-text');
-        const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
-        const editBtn = paragraphElement.querySelector('.edit-paragraph-btn');
-        const saveEditBtn = paragraphElement.querySelector('.save-edit-btn');
-
-        paragraphText.style.display = 'none';
-        editTextarea.style.display = 'block';
-        editBtn.style.display = 'none';
-        saveEditBtn.style.display = 'inline-block';
-    }
-
-    async function saveEdit(index) {
-        try {
-            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-            const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
-            const newContent = editTextarea.value;
-
-            const response = await fetch('/edit_scene', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    story_id: storyData.story_id,
-                    scene_id: index + 1, // Assuming scene_id starts from 1
-                    paragraph_index: index,
-                    content: newContent,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save edit');
-            }
-
-            const data = await response.json();
-            const paragraphText = paragraphElement.querySelector('.paragraph-text');
-            paragraphText.textContent = newContent;
-
-            if (data.new_image_url) {
-                const imageElement = paragraphElement.querySelector('.scene-image');
-                imageElement.src = data.new_image_url;
-            }
-
-            // Reset the UI
-            paragraphText.style.display = 'block';
-            editTextarea.style.display = 'none';
-            paragraphElement.querySelector('.edit-paragraph-btn').style.display = 'inline-block';
-            paragraphElement.querySelector('.save-edit-btn').style.display = 'none';
-
-            alert('Edit saved successfully!');
-        } catch (error) {
-            console.error('Error in saveEdit:', error);
-            alert('Failed to save edit. Please try again.');
+    function toggleLoadingIndicator(show) {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.className = `mt-4 text-blue-600 font-bold ${show ? '' : 'hidden'}`;
         }
     }
-
-    async function regenerateImage(index) {
-        try {
-            const response = await fetch('/regenerate_image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    story_id: storyData.story_id,
-                    paragraph_index: index,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to regenerate image');
-            }
-
-            const data = await response.json();
-            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-            const imageElement = paragraphElement.querySelector('.scene-image');
-            imageElement.src = data.new_image_url;
-        } catch (error) {
-            console.error('Error in regenerateImage:', error);
-            alert('Failed to regenerate image. Please try again.');
-        }
-    }
-
-    const style = document.createElement('style');
-    style.textContent = `
-        .edit-paragraph-text {
-            width: 100%;
-            min-height: 100px;
-            margin-top: 10px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: inherit;
-            resize: vertical;
-        }
-        .regenerate-image-btn, .edit-paragraph-btn, .save-edit-btn {
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-    `;
-    document.head.appendChild(style);
 });
