@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Log Line:</strong> ${logLine}</p>
             <h3>5-Act Structure</h3>
             <div class="act-structure">${storyData.outline}</div>
-            <button id="generate-scene" disabled>Generate Next Scene</button>
+            <button id="generate-scene">Generate Next Scene</button>
         `;
 
         const loadingIndicator = document.createElement('div');
@@ -49,17 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
 
-        const generateSceneButton = document.getElementById('generate-scene');
-        generateSceneButton.disabled = false;
-
-        addGenerateSceneListener();
-    }
-
-    function addGenerateSceneListener() {
-        const generateSceneButton = document.getElementById('generate-scene');
-        if (generateSceneButton) {
-            generateSceneButton.addEventListener('click', generateNextScene);
-        }
+        // Add event listener directly
+        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
     }
 
     async function generateNextScene() {
