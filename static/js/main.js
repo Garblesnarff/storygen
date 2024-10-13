@@ -274,8 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const data = await response.json();
-            imageElement.src = data.image_url;
-            alert('Image regenerated successfully!');
+            if (data.image_url) {
+                imageElement.src = data.image_url;
+                alert('Image regenerated successfully!');
+            } else {
+                throw new Error('No image URL returned from server');
+            }
         } catch (error) {
             console.error('Error in regenerateImage:', error);
             alert(`Failed to regenerate image: ${error.message}`);
