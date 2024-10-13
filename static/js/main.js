@@ -197,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         sceneContainer.appendChild(paragraphElement);
 
-        // Add event listeners for edit and regenerate buttons
         paragraphElement.querySelector('.edit-paragraph-btn').addEventListener('click', () => editParagraph(index));
         paragraphElement.querySelector('.regenerate-image-btn').addEventListener('click', () => regenerateImage(index));
     }
@@ -220,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
             paragraphText.textContent = newContent;
             textarea.replaceWith(paragraphText);
             saveButton.remove();
-            // Here you would typically send an AJAX request to update the content on the server
         });
 
         paragraphElement.querySelector('.card-content').appendChild(saveButton);
@@ -231,6 +229,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const paragraphText = paragraphElement.querySelector('.paragraph-text').textContent;
         const imageElement = paragraphElement.querySelector('img');
         const sceneId = paragraphElement.dataset.sceneId;
+
+        if (!sceneId) {
+            console.error('Scene ID is undefined');
+            alert('Failed to regenerate image: Scene ID is missing.');
+            return;
+        }
 
         try {
             const response = await fetch(`/regenerate_image/${sceneId}`, {
@@ -244,15 +248,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to regenerate image');
+                const errorText = await response.text();
+                console.error('Server response:', response.status, errorText);
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Unexpected content type:', contentType);
+                throw new Error('Unexpected response from server');
             }
 
             const data = await response.json();
+            if (!data.image_url) {
+                console.error('No image URL in response:', data);
+                throw new Error('Invalid response from server');
+            }
+
             imageElement.src = data.image_url;
         } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to regenerate image. Please try again.');
+            console.error('Error in regenerateImage:', error);
+            alert(`Failed to regenerate image: ${error.message}`);
         }
     }
 
