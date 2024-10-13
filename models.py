@@ -32,6 +32,7 @@ class Scene(db.Model):
     chapter = db.Column(db.Integer, nullable=False)
     scene_number = db.Column(db.Integer, nullable=False)
     content = db.Column(db.Text, nullable=False)
+    edited_content = db.Column(db.Text, nullable=True)
     image_url = db.Column(db.String(500), nullable=True)
     audio_url = db.Column(db.String(500), nullable=True)
     is_generated = db.Column(db.Boolean, default=False)

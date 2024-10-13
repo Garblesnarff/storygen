@@ -217,3 +217,24 @@ def view_story(story_id):
     
     scenes = Scene.query.filter_by(story_id=story.id).order_by(Scene.act, Scene.chapter, Scene.scene_number).all()
     return render_template('view_story.html', story=story, scenes=scenes)
+
+@main_bp.route('/edit_scene/<int:scene_id>', methods=['GET', 'POST'])
+def edit_scene(scene_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to edit a scene.')
+        return redirect(url_for('main.login'))
+    
+    scene = Scene.query.join(Story).filter(Scene.id == scene_id, Story.user_id == session['user_id']).first()
+    if not scene:
+        flash('Scene not found or you do not have permission to edit it.')
+        return redirect(url_for('main.my_stories'))
+    
+    if request.method == 'POST':
+        edited_content = request.form['edited_content']
+        scene.edited_content = edited_content
+        db.session.commit()
+        flash('Scene updated successfully.')
+        return redirect(url_for('main.view_story', story_id=scene.story_id))
+    
+    content = json.loads(scene.content) if scene.content else []
+    return render_template('edit_scene.html', scene=scene, content=content)
