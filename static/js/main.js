@@ -141,6 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleStreamedData(data) {
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid data received:', data);
+            return;
+        }
+
         switch (data.status) {
             case 'generating_paragraphs':
                 updateProgressMessage('Generating paragraphs...');
@@ -149,7 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProgressMessage('Paragraphs generated. Generating images and audio...');
                 break;
             case 'image_generated':
-                displayParagraph(data.paragraph, data.index);
+                if (data.paragraph && typeof data.index === 'number') {
+                    displayParagraph(data.paragraph, data.index);
+                } else {
+                    console.error('Invalid paragraph data:', data);
+                }
                 break;
             case 'complete':
                 updateProgressMessage('Scene generation complete');
@@ -174,16 +183,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayParagraph(paragraph, index) {
+        if (!paragraph || typeof paragraph !== 'object') {
+            console.error('Invalid paragraph data:', paragraph);
+            return;
+        }
+
         const paragraphElement = document.createElement('div');
         paragraphElement.className = 'card';
         paragraphElement.innerHTML = `
             <div class="card-content">
-                <img src="${paragraph.image_url}" alt="Scene Image" class="scene-image">
-                <p class="paragraph-text">${paragraph.content}</p>
-                <audio controls class="audio-player">
-                    <source src="${paragraph.audio_url}" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                </audio>
+                <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
+                <p class="paragraph-text">${paragraph.content || 'No content available'}</p>
+                ${paragraph.audio_url ? `
+                    <audio controls class="audio-player">
+                        <source src="${paragraph.audio_url}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                ` : ''}
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);

@@ -13,7 +13,7 @@ class BrainstormingAgent:
         self.model = "gemma2-9b-it"
 
     def generate_log_line(self, topic):
-        prompt = f"Generate a log line for a story based on the topic: '{topic}'. Use Blake Snyder's format: On the verge of a stasis=death moment, a flawed protagonist has a catalyst and breaks into Act Two; but when the midpoint happens, they must learn the theme stated, before Act Three leads to the finale where the flawed protagonist defeats (or doesn't defeat) the antagonistic force."
+        prompt = f"Generate a log line and characters for a story based on the topic: '{topic}'. Use Blake Snyder's format: On the verge of a stasis=death moment, a flawed protagonist has a catalyst and breaks into Act Two; but when the midpoint happens, they must learn the theme stated, before Act Three leads to the finale where the flawed protagonist defeats (or doesn't defeat) the antagonistic force."
         completion = groq_client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You are an expert storyteller."},
@@ -29,6 +29,7 @@ class StoryStructureAgent:
 
     def generate_5_act_structure(self, log_line):
         prompt = f'''Based on this log line: '{log_line}', generate a detailed 5-act story structure. 
+        create a detailed character profile for each character in the story.
         For each act, provide 3-5 chapters, and for each chapter, provide a brief description.
         
         Format:
