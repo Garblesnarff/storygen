@@ -174,8 +174,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
                 <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
                 <p class="paragraph-text">${paragraph.content || 'No content available'}</p>
-                <textarea class="edit-paragraph-text" rows="5">${paragraph.content || ''}</textarea>
-                <button class="save-edit-btn" data-index="${index}">Save Edit</button>
+                <button class="edit-paragraph-btn" data-index="${index}">Edit</button>
+                <textarea class="edit-paragraph-text" rows="5" style="display: none;">${paragraph.content || ''}</textarea>
+                <button class="save-edit-btn" data-index="${index}" style="display: none;">Save Edit</button>
                 ${paragraph.audio_url ? `
                     <audio controls class="audio-player">
                         <source src="${paragraph.audio_url}" type="audio/mpeg">
@@ -189,8 +190,69 @@ document.addEventListener('DOMContentLoaded', () => {
         const regenerateBtn = paragraphElement.querySelector('.regenerate-image-btn');
         regenerateBtn.addEventListener('click', () => regenerateImage(index));
 
+        const editBtn = paragraphElement.querySelector('.edit-paragraph-btn');
+        editBtn.addEventListener('click', () => editParagraph(index));
+
         const saveEditBtn = paragraphElement.querySelector('.save-edit-btn');
         saveEditBtn.addEventListener('click', () => saveEdit(index));
+    }
+
+    function editParagraph(index) {
+        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+        const paragraphText = paragraphElement.querySelector('.paragraph-text');
+        const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
+        const editBtn = paragraphElement.querySelector('.edit-paragraph-btn');
+        const saveEditBtn = paragraphElement.querySelector('.save-edit-btn');
+
+        paragraphText.style.display = 'none';
+        editTextarea.style.display = 'block';
+        editBtn.style.display = 'none';
+        saveEditBtn.style.display = 'inline-block';
+    }
+
+    async function saveEdit(index) {
+        try {
+            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+            const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
+            const newContent = editTextarea.value;
+
+            const response = await fetch('/edit_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    story_id: storyData.story_id,
+                    scene_id: index + 1, // Assuming scene_id starts from 1
+                    paragraph_index: index,
+                    content: newContent,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save edit');
+            }
+
+            const data = await response.json();
+            const paragraphText = paragraphElement.querySelector('.paragraph-text');
+            paragraphText.textContent = newContent;
+
+            if (data.new_image_url) {
+                const imageElement = paragraphElement.querySelector('.scene-image');
+                imageElement.src = data.new_image_url;
+            }
+
+            // Reset the UI
+            paragraphText.style.display = 'block';
+            editTextarea.style.display = 'none';
+            paragraphElement.querySelector('.edit-paragraph-btn').style.display = 'inline-block';
+            paragraphElement.querySelector('.save-edit-btn').style.display = 'none';
+
+            alert('Edit saved successfully!');
+        } catch (error) {
+            console.error('Error in saveEdit:', error);
+            alert('Failed to save edit. Please try again.');
+        }
     }
 
     async function regenerateImage(index) {
@@ -220,44 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function saveEdit(index) {
-        try {
-            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-            const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
-            const newContent = editTextarea.value;
-
-            const response = await fetch('/edit_scene', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    story_id: storyData.story_id,
-                    scene_id: index + 1, // Assuming scene_id starts from 1
-                    content: newContent,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save edit');
-            }
-
-            const data = await response.json();
-            const paragraphText = paragraphElement.querySelector('.paragraph-text');
-            paragraphText.textContent = newContent;
-
-            if (data.new_image_url) {
-                const imageElement = paragraphElement.querySelector('.scene-image');
-                imageElement.src = data.new_image_url;
-            }
-
-            alert('Edit saved successfully!');
-        } catch (error) {
-            console.error('Error in saveEdit:', error);
-            alert('Failed to save edit. Please try again.');
-        }
-    }
-
     const style = document.createElement('style');
     style.textContent = `
         .edit-paragraph-text {
@@ -271,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             font-size: inherit;
             resize: vertical;
         }
-        .regenerate-image-btn, .save-edit-btn {
+        .regenerate-image-btn, .edit-paragraph-btn, .save-edit-btn {
             margin-top: 5px;
             margin-bottom: 10px;
         }
