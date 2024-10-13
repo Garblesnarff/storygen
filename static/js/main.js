@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function displayStory(data) {
-        storyData = data;
+        storyData = data;  // Store the story data
         const bookSpec = storyData.book_spec.split('\n');
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
+        // Add event listener directly
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
@@ -180,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const paragraphElement = document.createElement('div');
         paragraphElement.className = 'card';
-        paragraphElement.dataset.sceneId = paragraph.scene_id;
         paragraphElement.innerHTML = `
             <div class="card-content">
                 <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
@@ -191,99 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         Your browser does not support the audio element.
                     </audio>
                 ` : ''}
-                <button class="edit-paragraph-btn" data-index="${index}">Edit Paragraph</button>
-                <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
-
-        paragraphElement.querySelector('.edit-paragraph-btn').addEventListener('click', () => editParagraph(index));
-        paragraphElement.querySelector('.regenerate-image-btn').addEventListener('click', () => regenerateImage(index));
-    }
-
-    function editParagraph(index) {
-        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-        const paragraphText = paragraphElement.querySelector('.paragraph-text');
-        const currentContent = paragraphText.textContent;
-
-        const textarea = document.createElement('textarea');
-        textarea.value = currentContent;
-        textarea.className = 'form-control';
-        paragraphText.replaceWith(textarea);
-
-        const saveButton = document.createElement('button');
-        saveButton.textContent = 'Save';
-        saveButton.className = 'btn btn-primary mt-2';
-        saveButton.addEventListener('click', async () => {
-            const newContent = textarea.value;
-            paragraphText.textContent = newContent;
-            textarea.replaceWith(paragraphText);
-            saveButton.remove();
-
-            const sceneId = paragraphElement.dataset.sceneId;
-            try {
-                const response = await fetch(`/edit_scene/${sceneId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ content: newContent }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to save edited content');
-                }
-
-                alert('Content saved successfully!');
-            } catch (error) {
-                console.error('Error saving content:', error);
-                alert('Failed to save content. Please try again.');
-            }
-        });
-
-        paragraphElement.querySelector('.card-content').appendChild(saveButton);
-    }
-
-    async function regenerateImage(index) {
-        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
-        const paragraphText = paragraphElement.querySelector('.paragraph-text').textContent;
-        const imageElement = paragraphElement.querySelector('img');
-        const sceneId = paragraphElement.dataset.sceneId;
-
-        if (!sceneId) {
-            console.error('Scene ID is undefined');
-            alert('Failed to regenerate image: Scene ID is missing.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`/regenerate_image/${sceneId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: paragraphText,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', response.status, errorText);
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            if (data.image_url) {
-                imageElement.src = data.image_url;
-                alert('Image regenerated successfully!');
-            } else {
-                throw new Error('No image URL returned from server');
-            }
-        } catch (error) {
-            console.error('Error in regenerateImage:', error);
-            alert(`Failed to regenerate image: ${error.message}`);
-        }
     }
 
     function toggleLoadingIndicator(show) {

@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from models import db, User, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene, generate_chapter_scenes
-from utils.image_generator import generate_images_for_paragraphs, get_flux_image
+from utils.image_generator import generate_images_for_paragraphs
 from utils.text_to_speech import generate_audio_for_scene
 import json
 
@@ -65,13 +65,18 @@ def logout():
 def generate_story():
     topic = request.json['topic']
     
+    # Generate book specification using BrainstormingAgent
     book_spec = generate_book_spec(topic)
+    
+    # Generate story outline using StoryStructureAgent
     outline = generate_outline(book_spec)
     
+    # Save to database
     new_story = Story(user_id=current_user.id, topic=topic, book_spec=book_spec, outline=outline)
     db.session.add(new_story)
     db.session.commit()
     
+    # Create initial scenes
     acts = 5
     chapters_per_act = 5
     scenes_per_chapter = 3
@@ -105,6 +110,7 @@ def get_next_scene():
     if not story:
         return jsonify({'error': 'Story not found or you do not have permission to access it.'}), 404
 
+    # Find the next scene that hasn't been generated
     next_scene = Scene.query.filter_by(story_id=story_id, is_generated=False).order_by(Scene.act, Scene.chapter, Scene.scene_number).first()
 
     if next_scene:
@@ -138,23 +144,18 @@ def generate_scene_route():
 
             logging.info("Generating images and audio for paragraphs")
             paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
-            scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
-            if not scene:
-                scene = Scene(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number)
-                db.session.add(scene)
-                db.session.commit()
-
             for i, para in enumerate(paragraphs_with_images):
                 logging.info(f"Generating audio for paragraph {i+1}")
                 audio_url = generate_audio_for_scene(para['content'])
                 para['audio_url'] = audio_url
-                para['scene_id'] = scene.id
                 yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
 
             scene_content = json.dumps(paragraphs_with_images)
-            scene.content = scene_content
-            scene.is_generated = True
-            db.session.commit()
+            scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
+            if scene:
+                scene.content = scene_content
+                scene.is_generated = True
+                db.session.commit()
             
             yield json.dumps({"status": "complete", "scene_id": scene.id}) + "\n"
         
@@ -213,57 +214,3 @@ def continue_story(story_id):
         return redirect(url_for('main.my_stories'))
     
     return render_template('continue_story.html', story=story)
-
-@main_bp.route('/edit_scene/<int:scene_id>', methods=['GET', 'POST'])
-@login_required
-def edit_scene(scene_id):
-    scene = Scene.query.get_or_404(scene_id)
-    story = Story.query.get_or_404(scene.story_id)
-    
-    if story.user_id != current_user.id:
-        flash('You do not have permission to edit this scene.')
-        return redirect(url_for('main.my_stories'))
-    
-    if request.method == 'POST':
-        content = request.form.get('content')
-        scene.content = json.dumps([{'content': content}])
-        db.session.commit()
-        flash('Scene updated successfully.')
-        return redirect(url_for('main.view_story', story_id=story.id))
-    
-    scene_content = json.loads(scene.content)[0]['content'] if scene.content else ''
-    return render_template('edit_scene.html', scene=scene, content=scene_content)
-
-@main_bp.route('/regenerate_image/<int:scene_id>', methods=['POST'])
-@login_required
-def regenerate_image(scene_id):
-    try:
-        logging.info(f'Regenerating image for scene {scene_id}')
-        scene = Scene.query.get_or_404(scene_id)
-        story = Story.query.get_or_404(scene.story_id)
-        
-        if story.user_id != current_user.id:
-            logging.warning(f'Unauthorized access attempt for scene {scene_id} by user {current_user.id}')
-            return jsonify({'error': 'You do not have permission to edit this scene.'}), 403
-        
-        content = request.json.get('content', '')
-        if not content:
-            logging.error(f'No content provided for image regeneration in scene {scene_id}')
-            return jsonify({'error': 'No content provided for image regeneration'}), 400
-
-        logging.info(f'Generating new image for content: {content[:50]}...')
-        new_image_url = get_flux_image(content)
-        
-        if new_image_url:
-            scene_content = json.loads(scene.content)
-            scene_content[0]['image_url'] = new_image_url
-            scene.content = json.dumps(scene_content)
-            db.session.commit()
-            logging.info(f'Image regenerated successfully for scene {scene_id}. New URL: {new_image_url}')
-            return jsonify({'success': True, 'image_url': new_image_url})
-        else:
-            logging.error(f'Failed to generate new image for scene {scene_id}')
-            return jsonify({'error': 'Failed to generate new image'}), 500
-    except Exception as e:
-        logging.error(f'Error in regenerate_image: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
