@@ -18,8 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to generate story');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             storyData = await response.json();
@@ -31,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function displayStory(data) {
-        storyData = data;  // Store the story data
+        storyData = data;
         const bookSpec = storyData.book_spec.split('\n');
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
@@ -43,8 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
-        // Add event listener directly
-        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
+        const generateSceneButton = document.getElementById('generate-scene');
+        generateSceneButton.addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'loading-indicator';
@@ -73,8 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!nextSceneResponse.ok) {
-                const errorData = await nextSceneResponse.json();
-                throw new Error(errorData.error || 'Failed to get next scene');
+                throw new Error(`HTTP error! status: ${nextSceneResponse.status}`);
             }
             
             const nextSceneData = await nextSceneResponse.json();
@@ -98,8 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to generate scene');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const reader = response.body.getReader();
@@ -114,12 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 for (const line of lines) {
                     if (line.trim()) {
-                        try {
-                            const data = JSON.parse(line);
-                            handleStreamedData(data);
-                        } catch (error) {
-                            console.error('Error parsing JSON:', error, 'Raw data:', line);
-                        }
+                        handleStreamedData(line);
                     }
                 }
             }
@@ -132,6 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleStreamedData(data) {
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                return;
+            }
+        }
+
         if (!data || typeof data !== 'object') {
             console.error('Invalid data received:', data);
             return;
