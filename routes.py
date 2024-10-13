@@ -138,18 +138,23 @@ def generate_scene_route():
 
             logging.info("Generating images and audio for paragraphs")
             paragraphs_with_images = generate_images_for_paragraphs([{'content': p} for p in paragraphs])
+            scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
+            if not scene:
+                scene = Scene(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number)
+                db.session.add(scene)
+                db.session.commit()
+
             for i, para in enumerate(paragraphs_with_images):
                 logging.info(f"Generating audio for paragraph {i+1}")
                 audio_url = generate_audio_for_scene(para['content'])
                 para['audio_url'] = audio_url
+                para['scene_id'] = scene.id
                 yield json.dumps({"status": "image_generated", "paragraph": para, "index": i}) + "\n"
 
             scene_content = json.dumps(paragraphs_with_images)
-            scene = Scene.query.filter_by(story_id=story_id, act=act, chapter=chapter, scene_number=scene_number).first()
-            if scene:
-                scene.content = scene_content
-                scene.is_generated = True
-                db.session.commit()
+            scene.content = scene_content
+            scene.is_generated = True
+            db.session.commit()
             
             yield json.dumps({"status": "complete", "scene_id": scene.id}) + "\n"
         
