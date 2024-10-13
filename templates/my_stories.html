@@ -9,7 +9,7 @@
             <li class="list-group-item">
                 <h3>{{ story.topic }}</h3>
                 <p><strong>Created:</strong> {{ story.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                <a href="{{ url_for('main.index', story_id=story.id) }}" class="btn btn-primary">Continue Story</a>
+                <a href="{{ url_for('main.continue_story', story_id=story.id) }}" class="btn btn-primary">Continue Story</a>
             </li>
         {% endfor %}
         </ul>
