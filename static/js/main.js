@@ -269,15 +269,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to regenerate image');
+                const errorText = await response.text();
+                console.error('Server response:', response.status, errorText);
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Unexpected content type:', contentType);
+                throw new Error('Unexpected response from server');
             }
 
             const data = await response.json();
+            if (!data.image_url) {
+                console.error('No image URL in response:', data);
+                throw new Error('Invalid response from server');
+            }
+
             imageElement.src = data.image_url;
             alert('Image regenerated successfully!');
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error in regenerateImage:', error);
             alert(`Failed to regenerate image: ${error.message}`);
         }
     }
