@@ -63,44 +63,49 @@ def logout():
 @main_bp.route('/generate_story', methods=['POST'])
 @login_required
 def generate_story():
-    topic = request.json['topic']
-    
-    # Generate book specification using BrainstormingAgent
-    book_spec = generate_book_spec(topic)
-    
-    # Generate story outline using StoryStructureAgent
-    outline = generate_outline(book_spec)
-    
-    # Save to database
-    new_story = Story(user_id=current_user.id, topic=topic, book_spec=book_spec, outline=outline)
-    db.session.add(new_story)
-    db.session.commit()
-    
-    # Create initial scenes
-    acts = 5
-    chapters_per_act = 5
-    scenes_per_chapter = 3
-    
-    for act in range(1, acts + 1):
-        for chapter in range(1, chapters_per_act + 1):
-            for scene in range(1, scenes_per_chapter + 1):
-                new_scene = Scene(
-                    story_id=new_story.id,
-                    act=act,
-                    chapter=chapter,
-                    scene_number=scene,
-                    content="",
-                    is_generated=False
-                )
-                db.session.add(new_scene)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'story_id': new_story.id,
-        'book_spec': book_spec,
-        'outline': outline
-    })
+    try:
+        topic = request.json['topic']
+        
+        # Generate book specification using BrainstormingAgent
+        book_spec = generate_book_spec(topic)
+        
+        # Generate story outline using StoryStructureAgent
+        outline = generate_outline(book_spec)
+        
+        # Save to database
+        new_story = Story(user_id=current_user.id, topic=topic, book_spec=book_spec, outline=outline)
+        db.session.add(new_story)
+        db.session.commit()
+        
+        # Create initial scenes
+        acts = 5
+        chapters_per_act = 5
+        scenes_per_chapter = 3
+        
+        for act in range(1, acts + 1):
+            for chapter in range(1, chapters_per_act + 1):
+                for scene in range(1, scenes_per_chapter + 1):
+                    new_scene = Scene(
+                        story_id=new_story.id,
+                        act=act,
+                        chapter=chapter,
+                        scene_number=scene,
+                        content="",
+                        is_generated=False
+                    )
+                    db.session.add(new_scene)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'story_id': new_story.id,
+            'book_spec': book_spec,
+            'outline': outline
+        })
+    except Exception as e:
+        logging.error(f"Error in generate_story: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/get_next_scene', methods=['POST'])
 @login_required
@@ -248,3 +253,41 @@ def regenerate_image():
     except Exception as e:
         logging.error(f"Error in regenerate_image: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/edit_scene', methods=['POST'])
+@login_required
+def edit_scene():
+    try:
+        data = request.json
+        story_id = data['story_id']
+        scene_id = data['scene_id']
+        new_content = data['content']
+        
+        story = Story.query.filter_by(id=story_id, user_id=current_user.id).first()
+        if not story:
+            return jsonify({'success': False, 'error': 'Story not found or you do not have permission to edit it.'}), 404
+        
+        scene = Scene.query.filter_by(id=scene_id, story_id=story_id).first()
+        if not scene:
+            return jsonify({'success': False, 'error': 'Scene not found.'}), 404
+        
+        scene.content = json.dumps([{'content': new_content}])
+        db.session.commit()
+        
+        # Regenerate image for the edited content
+        new_image_url = get_flux_image(new_content)
+        if new_image_url:
+            scene_content = json.loads(scene.content)
+            scene_content[0]['image_url'] = new_image_url
+            scene.content = json.dumps(scene_content)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'scene_id': scene.id,
+            'new_content': new_content,
+            'new_image_url': new_image_url
+        })
+    except Exception as e:
+        logging.error(f"Error in edit_scene: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

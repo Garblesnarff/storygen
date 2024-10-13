@@ -44,12 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
-
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.id = 'loading-indicator';
-        loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
-        loadingIndicator.textContent = 'Generating scene...';
-        storyContainer.appendChild(loadingIndicator);
     }
 
     async function generateNextScene() {
@@ -59,8 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            toggleLoadingIndicator(true);
-            
             const nextSceneResponse = await fetch('/get_next_scene', {
                 method: 'POST',
                 headers: {
@@ -125,8 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
             alert(`Failed to generate scene: ${error.message}`);
-        } finally {
-            toggleLoadingIndicator(false);
         }
     }
 
@@ -152,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'complete':
                 updateProgressMessage('Scene generation complete');
-                toggleLoadingIndicator(false);
                 break;
             default:
                 console.warn('Unknown status:', data.status);
@@ -186,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
                 <p class="paragraph-text">${paragraph.content || 'No content available'}</p>
                 <textarea class="edit-paragraph-text" rows="5">${paragraph.content || ''}</textarea>
+                <button class="save-edit-btn" data-index="${index}">Save Edit</button>
                 ${paragraph.audio_url ? `
                     <audio controls class="audio-player">
                         <source src="${paragraph.audio_url}" type="audio/mpeg">
@@ -196,13 +186,11 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         sceneContainer.appendChild(paragraphElement);
 
-        // Add event listener for the Regenerate Image button
         const regenerateBtn = paragraphElement.querySelector('.regenerate-image-btn');
         regenerateBtn.addEventListener('click', () => regenerateImage(index));
 
-        // Add event listener for the edit paragraph textarea
-        const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
-        editTextarea.addEventListener('input', () => updateParagraphContent(index, editTextarea.value));
+        const saveEditBtn = paragraphElement.querySelector('.save-edit-btn');
+        saveEditBtn.addEventListener('click', () => saveEdit(index));
     }
 
     async function regenerateImage(index) {
@@ -232,16 +220,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateParagraphContent(index, newContent) {
-        // For now, we'll just log the update. In a real application, you'd want to send this to the server.
-        console.log('Updating content for paragraph', index, newContent);
-        // Here you could add logic to send the updated content to the server
-    }
+    async function saveEdit(index) {
+        try {
+            const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+            const editTextarea = paragraphElement.querySelector('.edit-paragraph-text');
+            const newContent = editTextarea.value;
 
-    function toggleLoadingIndicator(show) {
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.className = `mt-4 text-blue-600 font-bold ${show ? '' : 'hidden'}`;
+            const response = await fetch('/edit_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    story_id: storyData.story_id,
+                    scene_id: index + 1, // Assuming scene_id starts from 1
+                    content: newContent,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save edit');
+            }
+
+            const data = await response.json();
+            const paragraphText = paragraphElement.querySelector('.paragraph-text');
+            paragraphText.textContent = newContent;
+
+            if (data.new_image_url) {
+                const imageElement = paragraphElement.querySelector('.scene-image');
+                imageElement.src = data.new_image_url;
+            }
+
+            alert('Edit saved successfully!');
+        } catch (error) {
+            console.error('Error in saveEdit:', error);
+            alert('Failed to save edit. Please try again.');
         }
     }
 
@@ -259,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
             font-size: inherit;
             resize: vertical;
         }
-        .regenerate-image-btn {
+        .regenerate-image-btn, .save-edit-btn {
             margin-top: 5px;
             margin-bottom: 10px;
         }
