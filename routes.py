@@ -238,13 +238,16 @@ def edit_scene(scene_id):
 @login_required
 def regenerate_image(scene_id):
     try:
+        logging.info(f'Regenerating image for scene {scene_id}')
         scene = Scene.query.get_or_404(scene_id)
         story = Story.query.get_or_404(scene.story_id)
         
         if story.user_id != current_user.id:
+            logging.warning(f'Unauthorized access attempt for scene {scene_id}')
             return jsonify({'error': 'You do not have permission to edit this scene.'}), 403
         
         content = request.json.get('content', '')
+        logging.info(f'Generating new image for content: {content[:50]}...')
         new_image_url = get_flux_image(content)
         
         if new_image_url:
@@ -252,8 +255,11 @@ def regenerate_image(scene_id):
             scene_content[0]['image_url'] = new_image_url
             scene.content = json.dumps(scene_content)
             db.session.commit()
+            logging.info(f'Image regenerated successfully for scene {scene_id}')
             return jsonify({'success': True, 'image_url': new_image_url})
         else:
+            logging.error(f'Failed to generate new image for scene {scene_id}')
             return jsonify({'error': 'Failed to generate new image'}), 500
     except Exception as e:
+        logging.error(f'Error in regenerate_image: {str(e)}')
         return jsonify({'error': str(e)}), 500

@@ -214,11 +214,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveButton = document.createElement('button');
         saveButton.textContent = 'Save';
         saveButton.className = 'btn btn-primary mt-2';
-        saveButton.addEventListener('click', () => {
+        saveButton.addEventListener('click', async () => {
             const newContent = textarea.value;
             paragraphText.textContent = newContent;
             textarea.replaceWith(paragraphText);
             saveButton.remove();
+
+            // Save the edited content to the server
+            const sceneId = paragraphElement.dataset.sceneId;
+            try {
+                const response = await fetch(`/edit_scene/${sceneId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: newContent }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save edited content');
+                }
+
+                alert('Content saved successfully!');
+            } catch (error) {
+                console.error('Error saving content:', error);
+                alert('Failed to save content. Please try again.');
+            }
         });
 
         paragraphElement.querySelector('.card-content').appendChild(saveButton);
@@ -248,26 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', response.status, errorText);
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('Unexpected content type:', contentType);
-                throw new Error('Unexpected response from server');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to regenerate image');
             }
 
             const data = await response.json();
-            if (!data.image_url) {
-                console.error('No image URL in response:', data);
-                throw new Error('Invalid response from server');
-            }
-
             imageElement.src = data.image_url;
+            alert('Image regenerated successfully!');
         } catch (error) {
-            console.error('Error in regenerateImage:', error);
+            console.error('Error:', error);
             alert(`Failed to regenerate image: ${error.message}`);
         }
     }
