@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate story');
             }
             
             storyData = await response.json();
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function displayStory(data) {
-        storyData = data;
+        storyData = data;  // Store the story data
         const bookSpec = storyData.book_spec.split('\n');
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
@@ -42,8 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
-        const generateSceneButton = document.getElementById('generate-scene');
-        generateSceneButton.addEventListener('click', generateNextScene);
+        // Add event listener directly
+        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'loading-indicator';
@@ -72,7 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!nextSceneResponse.ok) {
-                throw new Error(`HTTP error! status: ${nextSceneResponse.status}`);
+                const errorData = await nextSceneResponse.json();
+                throw new Error(errorData.error || 'Failed to get next scene');
             }
             
             const nextSceneData = await nextSceneResponse.json();
@@ -96,7 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate scene');
             }
             
             const reader = response.body.getReader();
@@ -111,7 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 for (const line of lines) {
                     if (line.trim()) {
-                        handleStreamedData(line);
+                        try {
+                            const data = JSON.parse(line);
+                            handleStreamedData(data);
+                        } catch (error) {
+                            console.error('Error parsing JSON:', error, 'Raw data:', line);
+                        }
                     }
                 }
             }
@@ -124,15 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleStreamedData(data) {
-        if (typeof data === 'string') {
-            try {
-                data = JSON.parse(data);
-            } catch (error) {
-                console.error('Error parsing JSON:', error);
-                return;
-            }
-        }
-
         if (!data || typeof data !== 'object') {
             console.error('Invalid data received:', data);
             return;

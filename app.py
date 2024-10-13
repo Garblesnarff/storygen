@@ -3,7 +3,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
-import json
 
 class Base(DeclarativeBase):
     pass
@@ -28,10 +27,6 @@ def create_app():
     def load_user(user_id):
         from models import User
         return User.query.get(int(user_id))
-
-    @app.template_filter('from_json')
-    def from_json(value):
-        return json.loads(value)
 
     return app
 
