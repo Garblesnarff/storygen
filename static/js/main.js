@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Add event listener using event delegation
+    storyContainer.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'generate-scene') {
+            generateNextScene();
+        }
+    });
+
     function displayStory(data) {
         storyData = data;  // Store the story data
         const bookSpec = storyData.book_spec.split('\n');
@@ -48,9 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.className = 'mt-4 text-blue-600 font-bold hidden';
         loadingIndicator.textContent = 'Generating scene...';
         storyContainer.appendChild(loadingIndicator);
-
-        // Add event listener directly
-        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
     }
 
     async function generateNextScene() {
