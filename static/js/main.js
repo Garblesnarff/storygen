@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
-        // Add event listener directly
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
@@ -191,9 +190,69 @@ document.addEventListener('DOMContentLoaded', () => {
                         Your browser does not support the audio element.
                     </audio>
                 ` : ''}
+                <button class="edit-paragraph-btn" data-index="${index}">Edit Paragraph</button>
+                <button class="regenerate-image-btn" data-index="${index}">Regenerate Image</button>
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
+
+        // Add event listeners for edit and regenerate buttons
+        paragraphElement.querySelector('.edit-paragraph-btn').addEventListener('click', () => editParagraph(index));
+        paragraphElement.querySelector('.regenerate-image-btn').addEventListener('click', () => regenerateImage(index));
+    }
+
+    function editParagraph(index) {
+        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+        const paragraphText = paragraphElement.querySelector('.paragraph-text');
+        const currentContent = paragraphText.textContent;
+
+        const textarea = document.createElement('textarea');
+        textarea.value = currentContent;
+        textarea.className = 'form-control';
+        paragraphText.replaceWith(textarea);
+
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save';
+        saveButton.className = 'btn btn-primary mt-2';
+        saveButton.addEventListener('click', () => {
+            const newContent = textarea.value;
+            paragraphText.textContent = newContent;
+            textarea.replaceWith(paragraphText);
+            saveButton.remove();
+            // Here you would typically send an AJAX request to update the content on the server
+        });
+
+        paragraphElement.querySelector('.card-content').appendChild(saveButton);
+    }
+
+    async function regenerateImage(index) {
+        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+        const paragraphText = paragraphElement.querySelector('.paragraph-text').textContent;
+        const imageElement = paragraphElement.querySelector('img');
+
+        try {
+            const response = await fetch('/regenerate_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: paragraphText,
+                    story_id: storyData.story_id,
+                    scene_index: index,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to regenerate image');
+            }
+
+            const data = await response.json();
+            imageElement.src = data.image_url;
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to regenerate image. Please try again.');
+        }
     }
 
     function toggleLoadingIndicator(show) {

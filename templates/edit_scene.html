@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Scene</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="content">Scene Content:</label>
+            <textarea class="form-control" id="content" name="content" rows="10" required>{{ content }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+    <div class="mt-4">
+        <h3>Regenerate Image</h3>
+        <p>Current image:</p>
+        <img id="scene-image" src="{{ scene.content|from_json|first|attr('image_url') }}" alt="Scene Image" class="img-fluid mb-3">
+        <button id="regenerate-image" class="btn btn-secondary">Regenerate Image</button>
+    </div>
+</div>
+
+<script>
+document.getElementById('regenerate-image').addEventListener('click', async function() {
+    const content = document.getElementById('content').value;
+    try {
+        const response = await fetch(`/regenerate_image/{{ scene.id }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content }),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to regenerate image');
+        }
+        
+        const data = await response.json();
+        document.getElementById('scene-image').src = data.image_url;
+        alert('Image regenerated successfully!');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to regenerate image. Please try again.');
+    }
+});
+</script>
+{% endblock %}

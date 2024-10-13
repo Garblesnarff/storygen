@@ -28,6 +28,12 @@ def create_app():
         from models import User
         return User.query.get(int(user_id))
 
+    # Add a Jinja2 filter for parsing JSON
+    @app.template_filter('from_json')
+    def from_json(value):
+        import json
+        return json.loads(value)
+
     return app
 
 app = create_app()
