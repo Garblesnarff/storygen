@@ -30,13 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add event listener using event delegation
-    storyContainer.addEventListener('click', (e) => {
-        if (e.target && e.target.id === 'generate-scene') {
-            generateNextScene();
-        }
-    });
-
     function displayStory(data) {
         storyData = data;  // Store the story data
         const bookSpec = storyData.book_spec.split('\n');
@@ -49,6 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="act-structure">${storyData.outline}</div>
             <button id="generate-scene">Generate Next Scene</button>
         `;
+
+        // Add event listener directly
+        document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'loading-indicator';
