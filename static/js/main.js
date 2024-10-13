@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const paragraphElement = document.createElement('div');
         paragraphElement.className = 'card';
+        paragraphElement.dataset.sceneId = paragraph.scene_id;
         paragraphElement.innerHTML = `
             <div class="card-content">
                 <img src="${paragraph.image_url || '/static/images/placeholder.svg'}" alt="Scene Image" class="scene-image">
@@ -229,22 +230,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
         const paragraphText = paragraphElement.querySelector('.paragraph-text').textContent;
         const imageElement = paragraphElement.querySelector('img');
+        const sceneId = paragraphElement.dataset.sceneId;
 
         try {
-            const response = await fetch('/regenerate_image', {
+            const response = await fetch(`/regenerate_image/${sceneId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     content: paragraphText,
-                    story_id: storyData.story_id,
-                    scene_index: index,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to regenerate image');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to regenerate image');
             }
 
             const data = await response.json();

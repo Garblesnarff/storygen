@@ -232,20 +232,23 @@ def edit_scene(scene_id):
 @main_bp.route('/regenerate_image/<int:scene_id>', methods=['POST'])
 @login_required
 def regenerate_image(scene_id):
-    scene = Scene.query.get_or_404(scene_id)
-    story = Story.query.get_or_404(scene.story_id)
-    
-    if story.user_id != current_user.id:
-        return jsonify({'error': 'You do not have permission to edit this scene.'}), 403
-    
-    content = request.json.get('content', '')
-    new_image_url = get_flux_image(content)
-    
-    if new_image_url:
-        scene_content = json.loads(scene.content)
-        scene_content[0]['image_url'] = new_image_url
-        scene.content = json.dumps(scene_content)
-        db.session.commit()
-        return jsonify({'success': True, 'image_url': new_image_url})
-    else:
-        return jsonify({'error': 'Failed to generate new image'}), 500
+    try:
+        scene = Scene.query.get_or_404(scene_id)
+        story = Story.query.get_or_404(scene.story_id)
+        
+        if story.user_id != current_user.id:
+            return jsonify({'error': 'You do not have permission to edit this scene.'}), 403
+        
+        content = request.json.get('content', '')
+        new_image_url = get_flux_image(content)
+        
+        if new_image_url:
+            scene_content = json.loads(scene.content)
+            scene_content[0]['image_url'] = new_image_url
+            scene.content = json.dumps(scene_content)
+            db.session.commit()
+            return jsonify({'success': True, 'image_url': new_image_url})
+        else:
+            return jsonify({'error': 'Failed to generate new image'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
