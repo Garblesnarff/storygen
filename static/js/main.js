@@ -220,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea.replaceWith(paragraphText);
             saveButton.remove();
 
-            // Save the edited content to the server
             const sceneId = paragraphElement.dataset.sceneId;
             try {
                 const response = await fetch(`/edit_scene/${sceneId}`, {
