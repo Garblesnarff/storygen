@@ -247,25 +247,15 @@ def regenerate_image_route(scene_id):
         return jsonify({'error': 'You do not have permission to regenerate this image.'}), 403
     
     try:
-        logging.info(f'Raw scene content: {scene.content}')
-        if not scene.content:
-            return jsonify({'error': 'Scene content is empty'}), 400
-        
-        scene_data = json.loads(scene.content)
-        if not isinstance(scene_data, list) or len(scene_data) == 0:
-            return jsonify({'error': 'Invalid scene data format'}), 400
-        
-        scene_content = scene_data[0]['content']
+        scene_content = json.loads(scene.content)[0]['content']
         new_image_url = generate_image_for_paragraph(scene_content)
         
+        scene_data = json.loads(scene.content)
         scene_data[0]['image_url'] = new_image_url
         scene.content = json.dumps(scene_data)
         db.session.commit()
         
         return jsonify({'new_image_url': new_image_url})
-    except json.JSONDecodeError as e:
-        logging.error(f'JSON parsing error in regenerate_image: {str(e)}')
-        return jsonify({'error': 'Invalid scene data format'}), 400
     except Exception as e:
         logging.error(f'Error in regenerate_image: {str(e)}')
         return jsonify({'error': 'An unexpected error occurred'}), 500

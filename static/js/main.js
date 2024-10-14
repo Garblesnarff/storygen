@@ -190,16 +190,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         Your browser does not support the audio element.
                     </audio>
                 ` : ''}
-                <button class="edit-content" data-scene-id="${storyData.story_id}">Edit Content</button>
-                <button class="regenerate-image" data-scene-id="${storyData.story_id}">Regenerate Image</button>
+                <button class="edit-content" data-scene-id="${storyData.story_id}" data-paragraph-index="${index}">Edit Content</button>
+                <button class="regenerate-image" data-scene-id="${storyData.story_id}" data-paragraph-index="${index}">Regenerate Image</button>
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
 
         const editButton = paragraphElement.querySelector('.edit-content');
         const regenerateButton = paragraphElement.querySelector('.regenerate-image');
-        editButton.addEventListener('click', () => editContent(storyData.story_id, index));
-        regenerateButton.addEventListener('click', () => regenerateImage(storyData.story_id, index));
+        editButton.addEventListener('click', (event) => editContent(event.target.dataset.sceneId, event.target.dataset.paragraphIndex));
+        regenerateButton.addEventListener('click', (event) => regenerateImage(event.target.dataset.sceneId, event.target.dataset.paragraphIndex));
     }
 
     async function editContent(sceneId, index) {
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ content: newContent }),
+                    body: JSON.stringify({ content: newContent, index: index }),
                 });
 
                 if (!response.ok) {
@@ -237,6 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/regenerate_image/${sceneId}`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ index: index }),
             });
 
             if (!response.ok) {
