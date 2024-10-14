@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ story.topic }}</h2>
+    <p><strong>Created:</strong> {{ story.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    
+    <h3>Story Outline</h3>
+    <pre>{{ story.outline }}</pre>
+    
+    <h3>Scenes</h3>
+    {% for scene in scenes %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>Act {{ scene.act }}, Chapter {{ scene.chapter }}, Scene {{ scene.scene_number }}</h4>
+                {% if scene.content %}
+                    {% set scene_data = scene.content|from_json %}
+                    <img src="{{ scene_data[0].image_url }}" alt="Scene Image" class="img-fluid mb-2">
+                    <p>{{ scene_data[0].content }}</p>
+                    {% if scene_data[0].audio_url %}
+                        <audio controls class="mb-2">
+                            <source src="{{ scene_data[0].audio_url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    {% endif %}
+                    <a href="{{ url_for('main.edit_scene', scene_id=scene.id) }}" class="btn btn-primary btn-sm">Edit Content</a>
+                    <button class="btn btn-secondary btn-sm regenerate-image" data-scene-id="{{ scene.id }}">Regenerate Image</button>
+                {% else %}
+                    <p>Scene content not generated yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const regenerateButtons = document.querySelectorAll('.regenerate-image');
+    regenerateButtons.forEach(button => {
+        button.addEventListener('click', async (event) => {
+            const sceneId = event.target.dataset.sceneId;
+            try {
+                const response = await fetch(`/regenerate_image/${sceneId}`, {
+                    method: 'POST',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to regenerate image');
+                }
+
+                const data = await response.json();
+                const card = event.target.closest('.card');
+                const imageElement = card.querySelector('img');
+                imageElement.src = data.new_image_url;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to regenerate image. Please try again.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

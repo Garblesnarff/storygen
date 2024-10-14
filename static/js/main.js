@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function displayStory(data) {
-        storyData = data;  // Store the story data
+        storyData = data;
         const bookSpec = storyData.book_spec.split('\n');
         const logLine = bookSpec[1].replace('Log Line: ', '');
         
@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="generate-scene">Generate Next Scene</button>
         `;
 
-        // Add event listener directly
         document.getElementById('generate-scene').addEventListener('click', generateNextScene);
 
         const loadingIndicator = document.createElement('div');
@@ -191,44 +190,64 @@ document.addEventListener('DOMContentLoaded', () => {
                         Your browser does not support the audio element.
                     </audio>
                 ` : ''}
-                <button class="regenerate-image" data-paragraph-content="${encodeURIComponent(paragraph.content)}" data-scene-id="${storyData.story_id}">Regenerate Image</button>
+                <button class="edit-content" data-scene-id="${storyData.story_id}">Edit Content</button>
+                <button class="regenerate-image" data-scene-id="${storyData.story_id}">Regenerate Image</button>
             </div>
         `;
         sceneContainer.appendChild(paragraphElement);
 
-        // Add event listener for the Regenerate Image button
+        const editButton = paragraphElement.querySelector('.edit-content');
         const regenerateButton = paragraphElement.querySelector('.regenerate-image');
-        regenerateButton.addEventListener('click', regenerateImage);
+        editButton.addEventListener('click', () => editContent(storyData.story_id, index));
+        regenerateButton.addEventListener('click', () => regenerateImage(storyData.story_id, index));
     }
 
-    async function regenerateImage(event) {
-        const button = event.target;
-        const paragraphContent = decodeURIComponent(button.dataset.paragraphContent);
-        const sceneId = button.dataset.sceneId;
+    async function editContent(sceneId, index) {
+        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+        const paragraphText = paragraphElement.querySelector('.paragraph-text');
+        const currentContent = paragraphText.textContent;
+
+        const newContent = prompt('Edit the content:', currentContent);
+        if (newContent !== null && newContent !== currentContent) {
+            try {
+                const response = await fetch(`/edit_scene/${sceneId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: newContent }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update content');
+                }
+
+                paragraphText.textContent = newContent;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update content. Please try again.');
+            }
+        }
+    }
+
+    async function regenerateImage(sceneId, index) {
+        const paragraphElement = sceneContainer.querySelectorAll('.card')[index];
+        const imageElement = paragraphElement.querySelector('.scene-image');
 
         try {
-            const response = await fetch('/regenerate_image', {
+            const response = await fetch(`/regenerate_image/${sceneId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    paragraph_content: paragraphContent,
-                    scene_id: sceneId,
-                }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to regenerate image');
+                throw new Error('Failed to regenerate image');
             }
 
             const data = await response.json();
-            const imageElement = button.parentElement.querySelector('.scene-image');
             imageElement.src = data.new_image_url;
         } catch (error) {
             console.error('Error:', error);
-            alert(`Failed to regenerate image: ${error.message}`);
+            alert('Failed to regenerate image. Please try again.');
         }
     }
 

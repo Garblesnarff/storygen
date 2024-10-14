@@ -65,18 +65,13 @@ def generate_story():
     
     topic = request.json['topic']
     
-    # Generate book specification using BrainstormingAgent
     book_spec = generate_book_spec(topic)
-    
-    # Generate story outline using StoryStructureAgent
     outline = generate_outline(book_spec)
     
-    # Save to database
     new_story = Story(user_id=session['user_id'], topic=topic, book_spec=book_spec, outline=outline)
     db.session.add(new_story)
     db.session.commit()
     
-    # Create initial scenes
     acts = 5
     chapters_per_act = 5
     scenes_per_chapter = 3
@@ -112,7 +107,6 @@ def get_next_scene():
     if not story:
         return jsonify({'error': 'Story not found or you do not have permission to access it.'}), 404
 
-    # Find the next scene that hasn't been generated
     next_scene = Scene.query.filter_by(story_id=story_id, is_generated=False).order_by(Scene.act, Scene.chapter, Scene.scene_number).first()
 
     if next_scene:
@@ -218,28 +212,48 @@ def view_story(story_id):
     scenes = Scene.query.filter_by(story_id=story.id).order_by(Scene.act, Scene.chapter, Scene.scene_number).all()
     return render_template('view_story.html', story=story, scenes=scenes)
 
-@main_bp.route('/regenerate_image', methods=['POST'])
-def regenerate_image():
+@main_bp.route('/edit_scene/<int:scene_id>', methods=['GET', 'POST'])
+def edit_scene(scene_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to edit a scene.')
+        return redirect(url_for('main.login'))
+    
+    scene = Scene.query.get_or_404(scene_id)
+    story = Story.query.get(scene.story_id)
+    
+    if story.user_id != session['user_id']:
+        flash('You do not have permission to edit this scene.')
+        return redirect(url_for('main.my_stories'))
+    
+    if request.method == 'POST':
+        content = request.form.get('content')
+        scene.content = json.dumps([{'content': content, 'image_url': scene.image_url, 'audio_url': scene.audio_url}])
+        db.session.commit()
+        flash('Scene updated successfully.')
+        return redirect(url_for('main.view_story', story_id=story.id))
+    
+    scene_content = json.loads(scene.content)[0]['content'] if scene.content else ''
+    return render_template('edit_scene.html', scene=scene, content=scene_content)
+
+@main_bp.route('/regenerate_image/<int:scene_id>', methods=['POST'])
+def regenerate_image_route(scene_id):
     if 'user_id' not in session:
         return jsonify({'error': 'You must be logged in to regenerate an image.'}), 401
     
+    scene = Scene.query.get_or_404(scene_id)
+    story = Story.query.get(scene.story_id)
+    
+    if story.user_id != session['user_id']:
+        return jsonify({'error': 'You do not have permission to regenerate this image.'}), 403
+    
     try:
-        paragraph_content = request.json['paragraph_content']
-        scene_id = request.json['scene_id']
+        scene_content = json.loads(scene.content)[0]['content']
+        new_image_url = generate_image_for_paragraph(scene_content)
         
-        # Generate new image
-        new_image_url = generate_image_for_paragraph(paragraph_content)
-        
-        # Update the scene in the database
-        scene = Scene.query.get(scene_id)
-        if scene:
-            scene_content = json.loads(scene.content)
-            for paragraph in scene_content:
-                if paragraph['content'] == paragraph_content:
-                    paragraph['image_url'] = new_image_url
-                    break
-            scene.content = json.dumps(scene_content)
-            db.session.commit()
+        scene_data = json.loads(scene.content)[0]
+        scene_data['image_url'] = new_image_url
+        scene.content = json.dumps([scene_data])
+        db.session.commit()
         
         return jsonify({'new_image_url': new_image_url})
     except Exception as e:
