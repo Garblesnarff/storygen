@@ -70,3 +70,13 @@ def extract_keywords(scene_content):
     words = scene_content.split()
     keywords = [word for word in words if len(word) > 5][:5]
     return " ".join(keywords)
+
+def generate_image_for_paragraph(paragraph_content):
+    logging.info(f"Generating image for paragraph: {paragraph_content[:50]}...")
+    image_url = get_flux_image(paragraph_content)
+    if image_url:
+        logging.info(f"Image generated successfully: {image_url}")
+        return image_url
+    else:
+        logging.warning("Failed to generate image, using placeholder")
+        return "/static/images/placeholder.svg"

@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, Response, redire
 from werkzeug.security import check_password_hash
 from models import db, User, Story, Scene
 from utils.story_generator import generate_book_spec, generate_outline, generate_scene, generate_chapter_scenes
-from utils.image_generator import generate_images_for_paragraphs
+from utils.image_generator import generate_images_for_paragraphs, generate_image_for_paragraph
 from utils.text_to_speech import generate_audio_for_scene
 import json
 
@@ -217,3 +217,31 @@ def view_story(story_id):
     
     scenes = Scene.query.filter_by(story_id=story.id).order_by(Scene.act, Scene.chapter, Scene.scene_number).all()
     return render_template('view_story.html', story=story, scenes=scenes)
+
+@main_bp.route('/regenerate_image', methods=['POST'])
+def regenerate_image():
+    if 'user_id' not in session:
+        return jsonify({'error': 'You must be logged in to regenerate an image.'}), 401
+    
+    try:
+        paragraph_content = request.json['paragraph_content']
+        scene_id = request.json['scene_id']
+        
+        # Generate new image
+        new_image_url = generate_image_for_paragraph(paragraph_content)
+        
+        # Update the scene in the database
+        scene = Scene.query.get(scene_id)
+        if scene:
+            scene_content = json.loads(scene.content)
+            for paragraph in scene_content:
+                if paragraph['content'] == paragraph_content:
+                    paragraph['image_url'] = new_image_url
+                    break
+            scene.content = json.dumps(scene_content)
+            db.session.commit()
+        
+        return jsonify({'new_image_url': new_image_url})
+    except Exception as e:
+        logging.error(f'Error in regenerate_image: {str(e)}')
+        return jsonify({'error': str(e)}), 500
