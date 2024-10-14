@@ -248,9 +248,12 @@ def regenerate_image_route(scene_id):
     
     try:
         logging.info(f'Raw scene content: {scene.content}')
+        if not scene.content:
+            return jsonify({'error': 'Scene content is empty'}), 400
+        
         scene_data = json.loads(scene.content)
         if not isinstance(scene_data, list) or len(scene_data) == 0:
-            raise ValueError('Invalid scene data format')
+            return jsonify({'error': 'Invalid scene data format'}), 400
         
         scene_content = scene_data[0]['content']
         new_image_url = generate_image_for_paragraph(scene_content)
@@ -263,9 +266,6 @@ def regenerate_image_route(scene_id):
     except json.JSONDecodeError as e:
         logging.error(f'JSON parsing error in regenerate_image: {str(e)}')
         return jsonify({'error': 'Invalid scene data format'}), 400
-    except ValueError as e:
-        logging.error(f'Value error in regenerate_image: {str(e)}')
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
         logging.error(f'Error in regenerate_image: {str(e)}')
         return jsonify({'error': 'An unexpected error occurred'}), 500
